@@ -19,3 +19,5 @@ BINARIES    += flo-mwe
 COMPILEOPTS += `ppkg-config flo --cflags`
 LINKOPTS    += `ppkg-config flo --libs`
 SOURCES     += main.c++
+
+TESTSRC     += counter-32.bash

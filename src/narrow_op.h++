@@ -19,31 +19,16 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef NARROW_NODE_HXX
-#define NARROW_NODE_HXX
+#ifndef NARROW_OP_HXX
+#define NARROW_OP_HXX
 
-class narrow_node;
-
+#include "narrow_node.h++"
 #include "wide_node.h++"
-#include <libflo/node.h++>
+#include <libflo/operation.h++>
+#include <vector>
 
-/* Holds a narrow node, which is a node that will always fit within a
- * single word on the target machine. */
-class narrow_node: public libflo::node {
-    friend class libflo::node;
-
-public:
-    narrow_node(const std::string name,
-                const libflo::unknown<size_t>& width,
-                const libflo::unknown<size_t>& depth,
-                bool is_mem,
-                bool is_const,
-                libflo::unknown<size_t> cycle);
-
-public:
-    /* Clones a wide node into a narrow node. */
-    static std::shared_ptr<narrow_node>
-    clone_from(std::shared_ptr<wide_node> w);
-};
+std::vector<std::shared_ptr<libflo::operation<narrow_node>>>
+narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
+          size_t width);
 
 #endif

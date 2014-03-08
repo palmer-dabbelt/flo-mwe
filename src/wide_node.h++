@@ -22,6 +22,8 @@
 #ifndef WIDE_NODE_HXX
 #define WIDE_NODE_HXX
 
+class wide_node;
+
 #include "narrow_node.h++"
 #include <libflo/node.h++>
 #include <memory>
@@ -33,6 +35,22 @@
 class wide_node: public libflo::node {
     friend class libflo::node;
 
+public:
+    class nnode_viter {
+    private:
+        const typename std::vector<std::shared_ptr<narrow_node>> _nodes;
+        typename std::vector<std::shared_ptr<narrow_node>>::const_iterator _it;
+    public:
+        nnode_viter(const std::vector<std::shared_ptr<narrow_node>>& nodes)
+            : _nodes(nodes),
+              _it(_nodes.begin())
+            {
+            }
+        std::shared_ptr<narrow_node> operator*(void) const { return *_it; }
+        bool done(void) const { return _it == _nodes.end(); }
+        void operator++(void) { ++_it; }
+    };
+
 private:
     static size_t _word_length;
     static bool _word_length_set;
@@ -40,7 +58,8 @@ private:
 private:
     /* Stores the set of narrow words that coorespond to this wide
      * word. */
-    const std::vector<std::shared_ptr<narrow_node>> _nns;
+    std::vector<std::shared_ptr<narrow_node>> _nns;
+    bool _nns_valid;
 
 private:
     wide_node(const std::string name,
@@ -51,6 +70,10 @@ private:
               libflo::unknown<size_t> cycle);
 
 public:
+    /* Returns an iterator that walks through the list of narrow nodes
+     * that would need to be created in order to implement this node
+     * on a narrow machine. */
+    nnode_viter nnodes(void);
 
 public:
     /* Sets a global width parameter that refers to all nodes and

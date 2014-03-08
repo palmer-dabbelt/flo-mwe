@@ -29,4 +29,19 @@ narrow_node::narrow_node(const std::string name,
                          libflo::unknown<size_t> cycle)
     : libflo::node(name, width, depth, is_mem, is_const, cycle)
 {
+    if (this->width() > wide_node::get_word_length()) {
+        fprintf(stderr, "Attempted to build a narrow node wider than a word\n");
+        abort();
+    }
+}
+
+std::shared_ptr<narrow_node>
+narrow_node::clone_from(std::shared_ptr<wide_node> w)
+{
+    return std::shared_ptr<narrow_node>(new narrow_node(w->name(),
+                                                        w->width_u(),
+                                                        w->depth_u(),
+                                                        w->is_mem(),
+                                                        w->is_const(),
+                                                        w->cycle_u()));
 }

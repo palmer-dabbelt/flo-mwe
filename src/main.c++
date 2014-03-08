@@ -19,6 +19,7 @@
  * <http://www.gnu.org/licenses/>.
  */
 
+#include "narrow_op.h++"
 #include "narrow_node.h++"
 #include "version.h"
 #include "wide_node.h++"
@@ -78,6 +79,26 @@ int main(int argc, const char **argv)
      * const), and the other one accumulates outputs. */
     auto in_flo = flo<wide_node, operation<wide_node>>::parse(arg_input);
     auto out_flo = flo<narrow_node, operation<narrow_node>>::empty();
+
+    /* Copies the set of narrow nodes into the output Flo file.  The
+     * general idea here is that we know all these will eventually end
+     * up in the output file -- there may be more internal temporary
+     * nodes, but at least we need all of these to exist. */
+    for (auto it = in_flo->nodes(); !it.done(); ++it) {
+        auto wnode = *it;
+        for (auto it = wnode->nnodes(); !it.done(); ++it)
+            out_flo->add_node(*it);
+    }
+
+    /* Walks through each operation, converting it from an operation
+     * that consumes potientally-wide nodes to one that consumes
+     * definately-narrow nodes. */
+    for (auto it = in_flo->operations(); !it.done(); ++it) {
+        auto op = *it;
+        auto n = narrow_op(op, arg_width);
+        for (auto it = n.begin(); it != n.end(); ++it)
+            out_flo->add_op(*it);
+    }
 
     /* Writes the whole output graph that was produced into a Flo
      * file. */

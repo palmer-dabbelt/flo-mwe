@@ -29,7 +29,7 @@ size_t wide_node::_word_length;
 bool wide_node::_word_length_set = false;
 
 /* Maps this node to a list of narrow nodes. */
-static const std::vector<std::shared_ptr<narrow_node>>
+static std::vector<std::shared_ptr<narrow_node>>
 map_narrow(const std::string name,
            const libflo::unknown<size_t>& width,
            const libflo::unknown<size_t>& depth,
@@ -44,8 +44,29 @@ wide_node::wide_node(const std::string name,
                      bool is_const,
                      libflo::unknown<size_t> cycle)
     : libflo::node(name, width, depth, is_mem, is_const, cycle),
-      _nns(map_narrow(name, width, depth, is_mem, is_const, cycle))
+      _nns(),
+      _nns_valid(false)
 {
+}
+
+wide_node::nnode_viter wide_node::nnodes(void)
+{
+    if (_nns_valid == false) {
+        auto to_add = map_narrow(name(),
+                                 width_u(),
+                                 depth_u(),
+                                 is_mem(),
+                                 is_const(),
+                                 cycle_u()
+            );
+
+        for (auto it = to_add.begin(); it != to_add.end(); ++it)
+            _nns.push_back(*it);
+
+        _nns_valid = true;
+    }
+
+    return nnode_viter(_nns);
 }
 
 void wide_node::set_word_length(size_t word_length)
@@ -69,7 +90,7 @@ size_t wide_node::get_word_length(void)
     return _word_length;
 }
 
-const std::vector<std::shared_ptr<narrow_node>>
+std::vector<std::shared_ptr<narrow_node>>
 map_narrow(const std::string name,
            const libflo::unknown<size_t>& width,
            const libflo::unknown<size_t>& depth,
