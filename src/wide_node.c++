@@ -116,7 +116,16 @@ map_narrow(const std::string name,
             snprintf(n, LINE_MAX, "%s.%lu", name.c_str(), i);
         }
 
-        auto ptr = new narrow_node(n, width, depth, is_mem, is_const, cycle);
+        /* Figure out how wide the output should be.  The general rule
+         * is to not touch already-narrow ops, and to map other ops to
+         * many nodes that are as wide as possible. */
+        libflo::unknown<size_t> w = width;
+        if (i != node_count)
+            w = wide_node::get_word_length();
+        else if (i > 0)
+            w = width.value() % wide_node::get_word_length();
+
+        auto ptr = new narrow_node(n, w, depth, is_mem, is_const, cycle);
         out.push_back(std::shared_ptr<narrow_node>(ptr));
     }
 
