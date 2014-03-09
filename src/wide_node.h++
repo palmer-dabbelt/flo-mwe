@@ -75,6 +75,9 @@ public:
      * on a narrow machine. */
     nnode_viter nnodes(void);
 
+    /* Returns a single one of the narrow nodes. */
+    std::shared_ptr<narrow_node> nnode(size_t i);
+
 public:
     /* Sets a global width parameter that refers to all nodes and
      * determines the word size of the machine that's being generated

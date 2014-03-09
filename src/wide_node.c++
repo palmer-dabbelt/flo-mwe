@@ -69,6 +69,26 @@ wide_node::nnode_viter wide_node::nnodes(void)
     return nnode_viter(_nns);
 }
 
+std::shared_ptr<narrow_node> wide_node::nnode(size_t i)
+{
+    if (_nns_valid == false) {
+        auto to_add = map_narrow(name(),
+                                 width_u(),
+                                 depth_u(),
+                                 is_mem(),
+                                 is_const(),
+                                 cycle_u()
+            );
+
+        for (auto it = to_add.begin(); it != to_add.end(); ++it)
+            _nns.push_back(*it);
+
+        _nns_valid = true;
+    }
+
+    return _nns[i];
+}
+
 void wide_node::set_word_length(size_t word_length)
 {
     if (wide_node::_word_length_set == true) {
