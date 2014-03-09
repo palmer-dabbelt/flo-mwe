@@ -61,10 +61,45 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
      * remap it to some narrower operations. */
     out_t out;
 
-    /* FIXME: Actually do this... */
     switch (op->op()) {
-    case libflo::opcode::ADD:
+        /* These are bit-wise operations, which are basically just
+         * replicated N times as there's no dependencies at all! */
     case libflo::opcode::AND:
+    case libflo::opcode::MUX:
+    case libflo::opcode::OUT:
+    case libflo::opcode::REG:
+    case libflo::opcode::XOR:
+    {
+        size_t i = 0;
+        for (auto it = op->d()->nnodes(); !it.done(); ++i, ++it) {
+            auto d = *it;
+
+            std::vector<std::shared_ptr<narrow_node>> svec;
+            for (auto it = op->sources(); !it.done(); ++it) {
+                auto s = *it;
+
+                /* This makes MUX work: the idea is that if the width
+                 * is 1 (like MUX's select signal is) then we'll
+                 * always pick the first node.  Note that this is
+                 * perfectly fine in the general case because that's
+                 * what would be picked anyway! */
+                if (s->width() == 1)
+                    svec.push_back(s->nnode(0));
+                else
+                    svec.push_back(s->nnode(i));
+            }
+
+            auto ptr = libflo::operation<narrow_node>::create(d,
+                                                              d->width_u(),
+                                                              op->op(),
+                                                              svec);
+            out.push_back(ptr);
+        }
+
+        break;
+    }
+
+    case libflo::opcode::ADD:
     case libflo::opcode::ARSH:
     case libflo::opcode::CAT:
     case libflo::opcode::EAT:
@@ -80,22 +115,18 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::MOV:
     case libflo::opcode::MSK:
     case libflo::opcode::MUL:
-    case libflo::opcode::MUX:
     case libflo::opcode::NEG:
     case libflo::opcode::NEQ:
     case libflo::opcode::NOP:
     case libflo::opcode::NOT:
     case libflo::opcode::OR:
-    case libflo::opcode::OUT:
     case libflo::opcode::RD:
-    case libflo::opcode::REG:
     case libflo::opcode::RND:
     case libflo::opcode::RSH:
     case libflo::opcode::RST:
     case libflo::opcode::ST:
     case libflo::opcode::SUB:
     case libflo::opcode::WR:
-    case libflo::opcode::XOR:
         fprintf(stderr, "Can't narrow operation '%s'\n",
                 opcode_to_string(op->op()).c_str());
         abort();
