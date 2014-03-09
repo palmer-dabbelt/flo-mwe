@@ -120,7 +120,7 @@ map_narrow(const std::string name,
          * is to not touch already-narrow ops, and to map other ops to
          * many nodes that are as wide as possible. */
         libflo::unknown<size_t> w = width;
-        if (i != node_count)
+        if (i != (node_count - 1))
             w = wide_node::get_word_length();
         else if (i > 0)
             w = width.value() % wide_node::get_word_length();
