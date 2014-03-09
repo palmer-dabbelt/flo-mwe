@@ -136,6 +136,16 @@ map_narrow(const std::string name,
             snprintf(n, LINE_MAX, "%s.%lu", name.c_str(), i);
         }
 
+        /* FIXME: This silently drops the high-order bits of
+         * constants... */
+        /* Here's a special case for constants -- we only support
+         * emiting one-word wide constants and fail on everything
+         * else! */
+        if (is_const && i == 0)
+            snprintf(n, LINE_MAX, "%s", name.c_str());
+        else if (is_const)
+            snprintf(n, LINE_MAX, "0");
+
         /* Figure out how wide the output should be.  The general rule
          * is to not touch already-narrow ops, and to map other ops to
          * many nodes that are as wide as possible. */
