@@ -27,14 +27,15 @@ then
 fi
 
 # Perform the multi-word expansion
+cat test.flo
 mv test.flo test-wide.flo
 $PTEST_BINARY --width 32 --input test-wide.flo --output test.flo
 cat test.flo
 
 # Builds the rest of the C++ emulator, which contains a main() that
 # actually runs the code.
-time flo-llvm-c++ test.flo --header > test.h++
-cat test.h++
+time flo-llvm-c++ test.flo --header > test.h
+cat test.h
 
 time flo-llvm-c++ test.flo --compat > compat.c++
 cat compat.c++
@@ -42,7 +43,7 @@ cat compat.c++
 time clang -g -c -std=c++11 harness.c++ -o harness.llvm -S -emit-llvm
 #cat harness.llvm
 
-time clang -g -c -include test.h++ -std=c++11 compat.c++ \
+time clang -g -c -include test.h -std=c++11 compat.c++ \
     -o compat.llvm -S -emit-llvm
 #cat compat.llvm
 
@@ -57,13 +58,14 @@ time llvm-link test.llvm compat.llvm harness.llvm -S > exe.llvm
 
 # Optimizes the assembly that was generated.  I'm not sure if this is
 # necessary to do before I stick in inside the JIT or not...
-time opt -O3 exe.llvm -S > opt.llvm
+time opt exe.llvm -S > opt.llvm
 #cat opt.llvm
 
 # Runs the new emulator inside the LLVM interpreter (or probably JIT
 # compiler, if you're using a sane architecture).
-llc opt.llvm -o opt.S
-c++ -g opt.S -o opt
+time llc opt.llvm -o opt.S
+time as -g opt.S -o opt.o
+time clang++ -g opt.o -o opt
 if test -f test.stdin
 then
     cp test.stdin test.stdin.copy
