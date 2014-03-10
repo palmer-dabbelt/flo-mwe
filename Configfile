@@ -21,3 +21,4 @@ LINKOPTS    += `ppkg-config flo --libs`
 SOURCES     += main.c++
 
 TESTSRC     += counter-32.bash
+TESTSRC     += xor-250.bash
