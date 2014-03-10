@@ -37,6 +37,14 @@ map_narrow(const std::string name,
            bool is_const,
            libflo::unknown<size_t> cycle);
 
+static std::vector<std::shared_ptr<narrow_node>>
+map_catd(const std::string name,
+         const libflo::unknown<size_t>& width,
+         const libflo::unknown<size_t>& depth,
+         bool is_mem,
+         bool is_const,
+         libflo::unknown<size_t> cycle);
+
 wide_node::wide_node(const std::string name,
                      const libflo::unknown<size_t>& width,
                      const libflo::unknown<size_t>& depth,
@@ -45,7 +53,9 @@ wide_node::wide_node(const std::string name,
                      libflo::unknown<size_t> cycle)
     : libflo::node(name, width, depth, is_mem, is_const, cycle),
       _nns(),
-      _nns_valid(false)
+      _nns_valid(false),
+      _cdn(),
+      _cdn_valid(false)
 {
 }
 
@@ -87,6 +97,26 @@ std::shared_ptr<narrow_node> wide_node::nnode(size_t i)
     }
 
     return _nns[i];
+}
+
+std::shared_ptr<narrow_node> wide_node::catdnode(size_t i)
+{
+    if (_cdn_valid == false) {
+        auto to_add = map_catd(name(),
+                               width_u(),
+                               depth_u(),
+                               is_mem(),
+                               is_const(),
+                               cycle_u()
+            );
+
+        for (auto it = to_add.begin(); it != to_add.end(); ++it)
+            _cdn.push_back(*it);
+
+        _cdn_valid = true;
+    }
+
+    return _cdn[i];
 }
 
 void wide_node::set_word_length(size_t word_length)
@@ -134,6 +164,58 @@ map_narrow(const std::string name,
             snprintf(n, LINE_MAX, "%s", name.c_str());
         } else {
             snprintf(n, LINE_MAX, "%s.%lu", name.c_str(), i);
+        }
+
+        /* FIXME: This silently drops the high-order bits of
+         * constants... */
+        /* Here's a special case for constants -- we only support
+         * emiting one-word wide constants and fail on everything
+         * else! */
+        if (is_const && i == 0)
+            snprintf(n, LINE_MAX, "%s", name.c_str());
+        else if (is_const)
+            snprintf(n, LINE_MAX, "0");
+
+        /* Figure out how wide the output should be.  The general rule
+         * is to not touch already-narrow ops, and to map other ops to
+         * many nodes that are as wide as possible. */
+        libflo::unknown<size_t> w = width;
+        if (i != (node_count - 1))
+            w = wide_node::get_word_length();
+        else if (i > 0)
+            w = width.value() % wide_node::get_word_length();
+
+        auto ptr = new narrow_node(n, w, depth, is_mem, is_const, cycle);
+        out.push_back(std::shared_ptr<narrow_node>(ptr));
+    }
+
+    return out;
+}
+
+std::vector<std::shared_ptr<narrow_node>>
+map_catd(const std::string name,
+         const libflo::unknown<size_t>& width,
+         const libflo::unknown<size_t>& depth,
+         bool is_mem,
+         bool is_const,
+         libflo::unknown<size_t> cycle)
+{
+    std::vector<std::shared_ptr<narrow_node>> out;
+
+    /* Here's the number of nodes we need to build from this node. */
+    const size_t node_count =
+        (width.value() + wide_node::get_word_length() - 1)
+        / wide_node::get_word_length();
+
+    for (size_t i = 0; i < node_count; ++i) {
+        char n[LINE_MAX];
+
+        /* Avoids mangling node names that don't actually need to be
+         * mangled! */
+        if (node_count == 1 || i == (node_count - 1)) {
+            snprintf(n, LINE_MAX, "%s", name.c_str());
+        } else {
+            snprintf(n, LINE_MAX, "%s.c%lu", name.c_str(), i);
         }
 
         /* FIXME: This silently drops the high-order bits of

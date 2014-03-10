@@ -61,6 +61,11 @@ private:
     std::vector<std::shared_ptr<narrow_node>> _nns;
     bool _nns_valid;
 
+    /* The list of nodes to chain together when doing a debugging
+     * cat. */
+    std::vector<std::shared_ptr<narrow_node>> _cdn;
+    bool _cdn_valid;
+
 private:
     wide_node(const std::string name,
               const libflo::unknown<size_t>& width,
@@ -77,6 +82,11 @@ public:
 
     /* Returns a single one of the narrow nodes. */
     std::shared_ptr<narrow_node> nnode(size_t i);
+    size_t nnode_size(void) const { return _nns.size(); }
+
+    /* Here's the list of CATD nodes that serve to produce the actual
+     * output node. */
+    std::shared_ptr<narrow_node> catdnode(size_t i);
 
 public:
     /* Sets a global width parameter that refers to all nodes and

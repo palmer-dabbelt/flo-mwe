@@ -133,5 +133,35 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         abort();
     }
 
+    /* We now need to CATD together a bunch of nodes such that they
+     * produce exactly the same result as the wide operation would. */
+    std::shared_ptr<narrow_node> prev = NULL;
+    size_t i;
+    for (i = 0; i < op->d()->nnode_size(); ++i) {
+        if (prev == NULL) {
+            prev = op->d()->catdnode(i);
+
+            auto ptr = libflo::operation<narrow_node>
+                ::create(prev,
+                         prev->width_u(),
+                         libflo::opcode::XOR,
+                         {op->d()->nnode(0),
+                                 op->d()->nnode(0)}
+                    );
+            out.push_back(ptr);
+            continue;
+        }
+
+        auto next = op->d()->catdnode(i);
+        auto ptr = libflo::operation<narrow_node>::create(next,
+                                                          next->width_u(),
+                                                          libflo::opcode::CATD,
+                                                          {op->d()->nnode(i),
+                                                                  prev}
+            );
+        out.push_back(ptr);
+        prev = next;
+    }
+
     return out;
 }
