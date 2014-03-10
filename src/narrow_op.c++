@@ -102,6 +102,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::ADD:
     case libflo::opcode::ARSH:
     case libflo::opcode::CAT:
+    case libflo::opcode::CATD:
     case libflo::opcode::EAT:
     case libflo::opcode::EQ:
     case libflo::opcode::GTE:
