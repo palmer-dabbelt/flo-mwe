@@ -66,6 +66,8 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
          * replicated N times as there's no dependencies at all! */
     case libflo::opcode::AND:
     case libflo::opcode::MUX:
+    case libflo::opcode::NOT:
+    case libflo::opcode::OR:
     case libflo::opcode::OUT:
     case libflo::opcode::REG:
     case libflo::opcode::XOR:
@@ -119,8 +121,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::NEG:
     case libflo::opcode::NEQ:
     case libflo::opcode::NOP:
-    case libflo::opcode::NOT:
-    case libflo::opcode::OR:
     case libflo::opcode::RD:
     case libflo::opcode::RND:
     case libflo::opcode::RSH:
