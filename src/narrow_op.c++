@@ -135,18 +135,23 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
 
     /* We now need to CATD together a bunch of nodes such that they
      * produce exactly the same result as the wide operation would. */
+
+    /* This contains the previous node in the chain. */
     std::shared_ptr<narrow_node> prev = NULL;
-    size_t i;
-    for (i = 0; i < op->d()->nnode_count(); ++i) {
+
+    /* This contains the operation to load from, which is usually the
+     * destination, but can be the source for registers. */
+    auto cd = op->op() == libflo::opcode::REG ? op->t() : op->d();
+
+    for (size_t i = 0; i < op->d()->nnode_count(); ++i) {
         if (prev == NULL) {
             prev = op->d()->catdnode(i);
 
             auto ptr = libflo::operation<narrow_node>
                 ::create(prev,
                          prev->width_u(),
-                         libflo::opcode::XOR,
-                         {op->d()->nnode(0),
-                                 op->d()->nnode(0)}
+                         libflo::opcode::MOV,
+                         {cd->nnode(0)}
                     );
             out.push_back(ptr);
             continue;
@@ -156,7 +161,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         auto ptr = libflo::operation<narrow_node>::create(next,
                                                           next->width_u(),
                                                           libflo::opcode::CATD,
-                                                          {op->d()->nnode(i),
+                                                          {cd->nnode(i),
                                                                   prev}
             );
         out.push_back(ptr);
