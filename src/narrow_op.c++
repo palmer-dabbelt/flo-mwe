@@ -137,7 +137,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
      * produce exactly the same result as the wide operation would. */
     std::shared_ptr<narrow_node> prev = NULL;
     size_t i;
-    for (i = 0; i < op->d()->nnode_size(); ++i) {
+    for (i = 0; i < op->d()->nnode_count(); ++i) {
         if (prev == NULL) {
             prev = op->d()->catdnode(i);
 

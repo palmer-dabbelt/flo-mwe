@@ -82,7 +82,7 @@ public:
 
     /* Returns a single one of the narrow nodes. */
     std::shared_ptr<narrow_node> nnode(size_t i);
-    size_t nnode_size(void) const { return _nns.size(); }
+    size_t nnode_count(void) const { return _nns.size(); }
 
     /* Here's the list of CATD nodes that serve to produce the actual
      * output node. */
