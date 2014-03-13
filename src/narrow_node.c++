@@ -21,6 +21,10 @@
 
 #include "narrow_node.h++"
 
+#ifndef LINE_MAX
+#define LINE_MAX 1024
+#endif
+
 narrow_node::narrow_node(const std::string name,
                          const libflo::unknown<size_t>& width,
                          const libflo::unknown<size_t>& depth,
@@ -44,4 +48,36 @@ narrow_node::clone_from(std::shared_ptr<wide_node> w)
                                                         w->is_mem(),
                                                         w->is_const(),
                                                         w->cycle_u()));
+}
+
+std::shared_ptr<narrow_node>
+narrow_node::create_temp(const std::shared_ptr<narrow_node> t)
+{
+    static unsigned long num = 0;
+
+    char name[LINE_MAX];
+    snprintf(name, LINE_MAX, "MWE%lu", num++);
+
+    return std::shared_ptr<narrow_node>(new narrow_node(name,
+                                                        t->width_u(),
+                                                        t->depth_u(),
+                                                        t->is_mem(),
+                                                        t->is_const(),
+                                                        t->cycle_u()
+                                            ));
+}
+
+std::shared_ptr<narrow_node>
+narrow_node::create_const(const std::shared_ptr<narrow_node> t, size_t value)
+{
+    char name[LINE_MAX];
+    snprintf(name, LINE_MAX, "%lu", value);
+
+    return std::shared_ptr<narrow_node>(new narrow_node(name,
+                                                        t->width_u(),
+                                                        t->depth_u(),
+                                                        t->is_mem(),
+                                                        t->is_const(),
+                                                        t->cycle_u()
+                                            ));
 }

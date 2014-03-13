@@ -44,6 +44,18 @@ public:
     /* Clones a wide node into a narrow node. */
     static std::shared_ptr<narrow_node>
     clone_from(std::shared_ptr<wide_node> w);
+
+    /* Creates a automatically named temporary node based on the
+     * template of another node.  The idea is that this new node has
+     * all the same properties but is otherwise not associated with
+     * the original node. */
+    static std::shared_ptr<narrow_node>
+    create_temp(const std::shared_ptr<narrow_node> tplt);
+
+    /* Creates a constant, otherwise copying from the template like
+     * above. */
+    static std::shared_ptr<narrow_node>
+    create_const(const std::shared_ptr<narrow_node> tplt, size_t value);
 };
 
 #endif
