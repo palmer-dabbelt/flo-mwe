@@ -101,7 +101,150 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         break;
     }
 
+        /* Addition requires a carry chain.  There's no Flo
+         * instruction for carry chains, so I borrowed this algorithm
+         * from the Hacker's Delight, Chapter 2 Part 16: Double-Length
+         * Add/Subtract. */
     case libflo::opcode::ADD:
+    {
+        /* Here we generate the carry bit, which is initially zero. */
+        auto c = narrow_node::create_temp(op->s()->nnode(0));
+        {
+            auto c_op = libflo::operation<narrow_node>::create(
+                c,
+                c->width_u(),
+                libflo::opcode::XOR,
+                {op->s()->nnode(0), op->s()->nnode(0)}
+                );
+            out.push_back(c_op);
+        }
+
+        /* Walk through the D <= S + T node arrays, creating a sum at
+         * each step and producing another carry bit. */
+        for (size_t i = 0; i < op->d()->nnode_count(); ++i) {
+            auto d = op->d()->nnode(i);
+            auto s = op->s()->nnode(i);
+            auto t = op->t()->nnode(i);
+
+            /* The carry operation is really only a bit, so here we
+             * just need to cast it to our width. */
+            {
+                auto nc = narrow_node::create_temp(s);
+                auto z = narrow_node::create_temp(s);
+
+                auto z_op = libflo::operation<narrow_node>::create(
+                    z,
+                    z->width_u(),
+                    libflo::opcode::XOR,
+                    {s, s}
+                    );
+                out.push_back(z_op);
+
+                auto nc_op = libflo::operation<narrow_node>::create(
+                    nc,
+                    nc->width_u(),
+                    libflo::opcode::RSH,
+                    {c, z}
+                    );
+                out.push_back(nc_op);
+                c = nc;
+            }
+
+            /* Compute the partial sum, which is just a simple
+             * addition of the sources */
+            auto partial = narrow_node::create_temp(d);
+            {
+                auto partial_op = libflo::operation<narrow_node>::create(
+                    partial,
+                    partial->width_u(),
+                    libflo::opcode::ADD,
+                    {s, t}
+                    );
+                out.push_back(partial_op);
+            }
+
+            /* Compute the full sum (directly in place), which adds
+             * the partial sum to the carry bit. */
+            {
+                auto full_op = libflo::operation<narrow_node>::create(
+                    d,
+                    d->width_u(),
+                    libflo::opcode::ADD,
+                    {partial, c}
+                    );
+                out.push_back(full_op);
+            }
+
+            /* Compute a new carry bit.  Note that here I'm not using
+             * a comparison because I don't want to run into -fwrapv
+             * issues. */
+            /* FIXME: Figure out if we can use LT */
+            {
+                auto nc1 = narrow_node::create_temp(d);
+                auto nc2 = narrow_node::create_temp(d);
+                auto nc3 = narrow_node::create_temp(d);
+                auto nc4 = narrow_node::create_temp(d);
+                auto nc5 = narrow_node::create_temp(d);
+                auto nc = narrow_node::create_temp(d);
+
+                auto nc1_op = libflo::operation<narrow_node>::create(
+                    nc1,
+                    nc1->width_u(),
+                    libflo::opcode::AND,
+                    {s, t}
+                    );
+                out.push_back(nc1_op);
+
+                auto nc2_op = libflo::operation<narrow_node>::create(
+                    nc2,
+                    nc2->width_u(),
+                    libflo::opcode::OR,
+                    {s, t}
+                    );
+                out.push_back(nc2_op);
+
+                auto nc3_op = libflo::operation<narrow_node>::create(
+                    nc3,
+                    nc3->width_u(),
+                    libflo::opcode::NOT,
+                    {d}
+                    );
+                out.push_back(nc3_op);
+
+                auto nc4_op = libflo::operation<narrow_node>::create(
+                    nc4,
+                    nc4->width_u(),
+                    libflo::opcode::AND,
+                    {nc2, nc3}
+                    );
+                out.push_back(nc4_op);
+
+                auto nc5_op = libflo::operation<narrow_node>::create(
+                    nc5,
+                    nc5->width_u(),
+                    libflo::opcode::OR,
+                    {nc1, nc4}
+                    );
+                out.push_back(nc5_op);
+
+                auto shift_width = narrow_node::create_const(d, d->width() - 1);
+                auto nc_op = libflo::operation<narrow_node>::create(
+                    nc,
+                    nc->width_u(),
+                    libflo::opcode::RSH,
+                    {nc5, shift_width}
+                    );
+                out.push_back(nc_op);
+
+                /* The whole purpose of this was to generate a new
+                 * carry bit, which is now node here. */
+                c = nc;
+            }
+        }
+
+        break;
+    }
+
     case libflo::opcode::ARSH:
     case libflo::opcode::CAT:
     case libflo::opcode::CATD:
