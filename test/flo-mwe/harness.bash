@@ -29,7 +29,12 @@ fi
 # Perform the multi-word expansion
 cat test.flo
 mv test.flo test-wide.flo
-$PTEST_BINARY --width 32 --input test-wide.flo --output test.flo
+$PTEST_BINARY --width 32 --input test-wide.flo --output test-nocanon.flo
+cat test-nocanon.flo
+
+# Pass the generated Flo file through flo-canon to make sure it's
+# canonical
+flo-canon test-nocanon.flo > test.flo
 cat test.flo
 
 # Builds the rest of the C++ emulator, which contains a main() that
