@@ -106,6 +106,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
          * from the Hacker's Delight, Chapter 2 Part 16: Double-Length
          * Add/Subtract. */
     case libflo::opcode::ADD:
+    case libflo::opcode::SUB:
     {
         /* Here we generate the carry bit, which is initially zero. */
         auto c = narrow_node::create_temp(op->s()->nnode(0));
@@ -157,7 +158,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                 auto partial_op = libflo::operation<narrow_node>::create(
                     partial,
                     partial->width_u(),
-                    libflo::opcode::ADD,
+                    op->op(),
                     {s, t}
                     );
                 out.push_back(partial_op);
@@ -169,7 +170,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                 auto full_op = libflo::operation<narrow_node>::create(
                     d,
                     d->width_u(),
-                    libflo::opcode::ADD,
+                    op->op(),
                     {partial, c}
                     );
                 out.push_back(full_op);
@@ -179,6 +180,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
              * a comparison because I don't want to run into -fwrapv
              * issues. */
             /* FIXME: Figure out if we can use LT */
+            if (op->op() == libflo::opcode::ADD)
             {
                 auto nc1 = narrow_node::create_temp(d);
                 auto nc2 = narrow_node::create_temp(d);
@@ -240,6 +242,88 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                  * carry bit, which is now node here. */
                 c = nc;
             }
+            /* Subtract is safe from fwrapv troubles...  Note that the
+             * version prescribed in the Hacker's Delight only works
+             * for double-word subtraction, this is significantly
+             * enhanced... */
+            else if (op->op() == libflo::opcode::SUB)
+            {
+                auto zero = narrow_node::create_const(d, 0);
+
+                /* This is true IFF the current operation ends up
+                 * producing a carry. */
+                auto carry_here = narrow_node::create_temp(d);
+                auto carry_here_op = libflo::operation<narrow_node>::create(
+                    carry_here,
+                    carry_here->width_u(),
+                    libflo::opcode::LT,
+                    {s, t}
+                    );
+                out.push_back(carry_here_op);
+
+                auto carry_here_w = narrow_node::create_temp(d);
+                auto carry_here_w_op = libflo::operation<narrow_node>::create(
+                    carry_here_w,
+                    carry_here_w->width_u(),
+                    libflo::opcode::RSH,
+                    {carry_here, zero}
+                    );
+                out.push_back(carry_here_w_op);
+
+                /* Here's the special case: if the old carry bit was
+                 * set AND the sources are equal THEN we need to
+                 * propogate the carry bit along. */
+
+                /* First the equality test. */
+                auto is_zero = narrow_node::create_temp(d);
+                auto is_zero_op = libflo::operation<narrow_node>::create(
+                    is_zero,
+                    is_zero->width_u(),
+                    libflo::opcode::EQ,
+                    {s, t}
+                    );
+                out.push_back(is_zero_op);
+
+                auto is_zero_w = narrow_node::create_temp(d);
+                auto is_zero_w_op = libflo::operation<narrow_node>::create(
+                    is_zero_w,
+                    is_zero_w->width_u(),
+                    libflo::opcode::RSH,
+                    {is_zero, zero}
+                    );
+                out.push_back(is_zero_w_op);
+
+                /* Equaliy isn't sufficient for a carry, we also need
+                 * the old carry bit to be TRUE (otherwise it's just
+                 * zero). */
+                auto old_carry_w = narrow_node::create_temp(d);
+                auto old_carry_w_op = libflo::operation<narrow_node>::create(
+                    old_carry_w,
+                    old_carry_w->width_u(),
+                    libflo::opcode::AND,
+                    {is_zero_w, c}
+                    );
+                out.push_back(old_carry_w_op);
+
+                /* The new carry is just an OR of these two: either
+                 * the old carry bit required a propogation or this
+                 * required a new carry bit. */
+                auto nc = narrow_node::create_temp(d);
+                auto nc_op = libflo::operation<narrow_node>::create(
+                    nc,
+                    nc->width_u(),
+                    libflo::opcode::OR,
+                    {carry_here_w, old_carry_w}
+                    );
+                out.push_back(nc_op);
+
+                /* The whole purpose of this was to generate a new
+                 * "carry" (actually borrow) bit, which is now node
+                 * here. */
+                c = nc;
+            }
+            else
+                abort();
         }
 
         break;
@@ -269,7 +353,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::RSH:
     case libflo::opcode::RST:
     case libflo::opcode::ST:
-    case libflo::opcode::SUB:
     case libflo::opcode::WR:
         fprintf(stderr, "Can't narrow operation '%s'\n",
                 opcode_to_string(op->op()).c_str());
