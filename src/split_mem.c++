@@ -20,13 +20,43 @@
  */
 
 #include "split_mem.h++"
+#include <cmath>
 
-typedef std::vector<std::shared_ptr<libflo::operation<narrow_node>>> out_t;
+typedef std::vector<std::shared_ptr<libflo::operation<shallow_node>>> out_t;
 
 out_t split_mem(const std::shared_ptr<libflo::operation<narrow_node>> op,
-                size_t depth __attribute__((unused)))
+                size_t depth)
 {
+    /* Most node won't be too deep.  In order to avoid screwing
+     * anything up I just output those nodes directly. */
+    {
+        bool too_deep = false;
+        for (auto it = op->operands(); !it.done(); ++it) {
+            auto op = *it;
+            if (op->depth() > depth)
+                too_deep = true;
+        }
+
+        if (too_deep == false) {
+            std::shared_ptr<shallow_node> d;
+            std::vector<std::shared_ptr<shallow_node>> s;
+
+            d = shallow_node::clone_from(op->d());
+            for (auto it = op->sources(); !it.done(); ++it)
+                s.push_back(shallow_node::clone_from(*it));
+
+            out_t out;
+            auto ptr = libflo::operation<shallow_node>::create(d,
+                                                               op->width_u(),
+                                                               op->op(),
+                                                               s);
+            out.push_back(ptr);
+            return out;
+        }
+    }
+
+    fprintf(stderr, "Unable to shallow-ize node\n");
+    abort();
     out_t out;
-    out.push_back(op);
     return out;
 }

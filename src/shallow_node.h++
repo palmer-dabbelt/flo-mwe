@@ -19,17 +19,32 @@
  * <http://www.gnu.org/licenses/>.
  */
 
-#ifndef SPLIT_MEM_HXX
-#define SPLIT_MEM_HXX
+#ifndef SHALLOW_NODE_HXX
+#define SHALLOW_NODE_HXX
+
+class shallow_node;
 
 #include "narrow_node.h++"
-#include "shallow_node.h++"
-#include "wide_node.h++"
-#include <libflo/operation.h++>
-#include <vector>
+#include <libflo/node.h++>
 
-std::vector< std::shared_ptr< libflo::operation<shallow_node> > >
-split_mem(const std::shared_ptr<libflo::operation<narrow_node>> op,
-          size_t depth);
+/* Holds a single shallow node, which is a node that will always fit
+ * both within a single word and whose memory references will always
+ * fit within a single node on the target machine. */
+class shallow_node: public libflo::node {
+    friend class libflo::node;
+
+public:
+    shallow_node(const std::string name,
+                 const libflo::unknown<size_t>& width,
+                 const libflo::unknown<size_t>& depth,
+                 bool is_mem,
+                 bool is_const,
+                 libflo::unknown<size_t> cycle);
+
+public:
+    /* Clones a narrow node into a shallow node. */
+    static std::shared_ptr<shallow_node>
+    clone_from(std::shared_ptr<narrow_node> w);
+};
 
 #endif

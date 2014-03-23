@@ -48,9 +48,6 @@ map_catd(const std::string name,
          bool is_const,
          libflo::unknown<size_t> cycle);
 
-static std::vector<std::shared_ptr<narrow_node>>
-map_shallow(std::vector<std::shared_ptr<narrow_node>> n);
-
 wide_node::wide_node(const std::string name,
                      const libflo::unknown<size_t>& width,
                      const libflo::unknown<size_t>& depth,
@@ -68,13 +65,12 @@ wide_node::wide_node(const std::string name,
 wide_node::nnode_viter wide_node::nnodes(void)
 {
     if (_nns_valid == false) {
-        auto to_add = map_shallow(map_narrow(name(),
-                                             width_u(),
-                                             depth_u(),
-                                             is_mem(),
-                                             is_const(),
-                                             cycle_u()
-                                      )
+        auto to_add = map_narrow(name(),
+                                 width_u(),
+                                 depth_u(),
+                                 is_mem(),
+                                 is_const(),
+                                 cycle_u()
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)
@@ -89,13 +85,12 @@ wide_node::nnode_viter wide_node::nnodes(void)
 std::shared_ptr<narrow_node> wide_node::nnode(size_t i)
 {
     if (_nns_valid == false) {
-        auto to_add = map_shallow(map_narrow(name(),
-                                             width_u(),
-                                             depth_u(),
-                                             is_mem(),
-                                             is_const(),
-                                             cycle_u()
-                                      )
+        auto to_add = map_narrow(name(),
+                                 width_u(),
+                                 depth_u(),
+                                 is_mem(),
+                                 is_const(),
+                                 cycle_u()
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)
@@ -110,13 +105,12 @@ std::shared_ptr<narrow_node> wide_node::nnode(size_t i)
 std::shared_ptr<narrow_node> wide_node::catdnode(size_t i)
 {
     if (_cdn_valid == false) {
-        auto to_add = map_shallow(map_catd(name(),
-                                           width_u(),
-                                           depth_u(),
-                                           is_mem(),
-                                           is_const(),
-                                           cycle_u()
-                                      )
+        auto to_add = map_catd(name(),
+                               width_u(),
+                               depth_u(),
+                               is_mem(),
+                               is_const(),
+                               cycle_u()
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)
@@ -272,15 +266,4 @@ map_catd(const std::string name,
     }
 
     return out;
-}
-
-std::vector<std::shared_ptr<narrow_node>>
-map_shallow(std::vector<std::shared_ptr<narrow_node>> n)
-{
-    /* Most things won't need to be narrowed. */
-    if ((n.size() == 0) || (n[0]->depth() <= wide_node::get_mem_depth()))
-        return n;
-
-    fprintf(stderr, "Node shallow-izing not implemented.\n");
-    abort();
 }

@@ -87,7 +87,7 @@ int main(int argc, const char **argv)
      * The input file is read to produce the input one (which is
      * const), and the other one accumulates outputs. */
     auto in_flo = flo<wide_node, operation<wide_node>>::parse(arg_input);
-    auto out_flo = flo<narrow_node, operation<narrow_node>>::empty();
+    auto out_flo = flo<shallow_node, operation<shallow_node>>::empty();
 
     /* Copies the set of narrow nodes into the output Flo file.  The
      * general idea here is that we know all these will eventually end
@@ -95,8 +95,11 @@ int main(int argc, const char **argv)
      * nodes, but at least we need all of these to exist. */
     for (auto it = in_flo->nodes(); !it.done(); ++it) {
         auto wnode = *it;
-        for (auto it = wnode->nnodes(); !it.done(); ++it)
-            out_flo->add_node(*it);
+        for (auto it = wnode->nnodes(); !it.done(); ++it) {
+            auto nnode = *it;
+            for (auto it = nnode->snodes(); !it.done(); ++it)
+                out_flo->add_node(*it);
+        }
     }
 
     /* Walks through each operation, converting it from an operation
@@ -107,7 +110,6 @@ int main(int argc, const char **argv)
         auto n = narrow_op(op, arg_width);
         for (auto it = n.begin(); it != n.end(); ++it) {
             auto m = split_mem(*it, arg_depth);
-
             for (auto it = m.begin(); it != m.end(); ++it)
                 out_flo->add_op(*it);
         }
