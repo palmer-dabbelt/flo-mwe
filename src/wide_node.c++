@@ -28,6 +28,9 @@
 size_t wide_node::_word_length;
 bool wide_node::_word_length_set = false;
 
+size_t wide_node::_mem_depth;
+bool wide_node::_mem_depth_set = false;
+
 /* Maps this node to a list of narrow nodes. */
 static std::vector<std::shared_ptr<narrow_node>>
 map_narrow(const std::string name,
@@ -44,6 +47,9 @@ map_catd(const std::string name,
          bool is_mem,
          bool is_const,
          libflo::unknown<size_t> cycle);
+
+static std::vector<std::shared_ptr<narrow_node>>
+map_shallow(std::vector<std::shared_ptr<narrow_node>> n);
 
 wide_node::wide_node(const std::string name,
                      const libflo::unknown<size_t>& width,
@@ -62,12 +68,13 @@ wide_node::wide_node(const std::string name,
 wide_node::nnode_viter wide_node::nnodes(void)
 {
     if (_nns_valid == false) {
-        auto to_add = map_narrow(name(),
-                                 width_u(),
-                                 depth_u(),
-                                 is_mem(),
-                                 is_const(),
-                                 cycle_u()
+        auto to_add = map_shallow(map_narrow(name(),
+                                             width_u(),
+                                             depth_u(),
+                                             is_mem(),
+                                             is_const(),
+                                             cycle_u()
+                                      )
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)
@@ -82,12 +89,13 @@ wide_node::nnode_viter wide_node::nnodes(void)
 std::shared_ptr<narrow_node> wide_node::nnode(size_t i)
 {
     if (_nns_valid == false) {
-        auto to_add = map_narrow(name(),
-                                 width_u(),
-                                 depth_u(),
-                                 is_mem(),
-                                 is_const(),
-                                 cycle_u()
+        auto to_add = map_shallow(map_narrow(name(),
+                                             width_u(),
+                                             depth_u(),
+                                             is_mem(),
+                                             is_const(),
+                                             cycle_u()
+                                      )
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)
@@ -102,12 +110,13 @@ std::shared_ptr<narrow_node> wide_node::nnode(size_t i)
 std::shared_ptr<narrow_node> wide_node::catdnode(size_t i)
 {
     if (_cdn_valid == false) {
-        auto to_add = map_catd(name(),
-                               width_u(),
-                               depth_u(),
-                               is_mem(),
-                               is_const(),
-                               cycle_u()
+        auto to_add = map_shallow(map_catd(name(),
+                                           width_u(),
+                                           depth_u(),
+                                           is_mem(),
+                                           is_const(),
+                                           cycle_u()
+                                      )
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)
@@ -138,6 +147,27 @@ size_t wide_node::get_word_length(void)
     }
 
     return _word_length;
+}
+
+void wide_node::set_mem_depth(size_t word_length)
+{
+    if (wide_node::_mem_depth_set == true) {
+        fprintf(stderr, "Memory depth set twice!\n");
+        abort();
+    }
+
+    _mem_depth_set = true;
+    _mem_depth = word_length;
+}
+
+size_t wide_node::get_mem_depth(void)
+{
+    if (wide_node::_mem_depth_set == false) {
+        fprintf(stderr, "Memory depth get before set\n");
+        abort();
+    }
+
+    return _mem_depth;
 }
 
 std::vector<std::shared_ptr<narrow_node>>
@@ -242,4 +272,15 @@ map_catd(const std::string name,
     }
 
     return out;
+}
+
+std::vector<std::shared_ptr<narrow_node>>
+map_shallow(std::vector<std::shared_ptr<narrow_node>> n)
+{
+    /* Most things won't need to be narrowed. */
+    if ((n.size() == 0) || (n[0]->depth() <= wide_node::get_mem_depth()))
+        return n;
+
+    fprintf(stderr, "Node shallow-izing not implemented.\n");
+    abort();
 }

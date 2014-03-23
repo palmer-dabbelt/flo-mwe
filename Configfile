@@ -26,3 +26,4 @@ TESTSRC     += not-250.bash
 TESTSRC     += counter-250.bash
 TESTSRC     += counter-250-of.bash
 TESTSRC     += counter-250-down.bash
+TESTSRC     += mem-32-256.bash

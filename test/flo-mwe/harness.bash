@@ -29,7 +29,8 @@ fi
 # Perform the multi-word expansion
 cat test.flo
 mv test.flo test-wide.flo
-$PTEST_BINARY --width 32 --input test-wide.flo --output test-nocanon.flo
+$PTEST_BINARY --width 32 --depth 1024 \
+    --input test-wide.flo --output test-nocanon.flo
 cat test-nocanon.flo
 
 # Pass the generated Flo file through flo-canon to make sure it's

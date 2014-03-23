@@ -21,6 +21,7 @@
 
 #include "narrow_op.h++"
 #include "narrow_node.h++"
+#include "split_mem.h++"
 #include "version.h"
 #include "wide_node.h++"
 #include <libflo/flo.h++>
@@ -37,8 +38,10 @@ int main(int argc, const char **argv)
     }
 
     /* Prints the help text if anything went wrong. */
-    if (argc != 7) {
-        fprintf(stderr, "%s: --width <w> --input <i> --output <o>\n", argv[0]);
+    if (argc != 9) {
+        fprintf(stderr,
+                "%s: --width <w> --depth <d> --input <i> --output <o>\n",
+                argv[0]);
         fprintf(stderr, "  Replaces multi-word operations with multiple\n");
         fprintf(stderr, "  single-word operations in a Flo file.\n");
         fprintf(stderr, "  \n");
@@ -52,19 +55,24 @@ int main(int argc, const char **argv)
         fprintf(stderr, "Expected --width as 1st argument\n");
         exit(1);
     }
-    if (strcmp(argv[3], "--input") != 0) {
+    if (strcmp(argv[3], "--depth") != 0) {
+        fprintf(stderr, "Expected --width as 1st argument\n");
+        exit(1);
+    }
+    if (strcmp(argv[5], "--input") != 0) {
         fprintf(stderr, "Expected --input as 3rd argument\n");
         exit(1);
     }
-    if (strcmp(argv[5], "--output") != 0) {
+    if (strcmp(argv[7], "--output") != 0) {
         fprintf(stderr, "Expected --output as 5th argument\n");
         exit(1);
     }
 
     /* Finishes parsing the command-line arguments. */
     const size_t arg_width = atoi(argv[2]);
-    const std::string arg_input = argv[4];
-    const std::string arg_output = argv[6];
+    const size_t arg_depth = atoi(argv[4]);
+    const std::string arg_input = argv[6];
+    const std::string arg_output = argv[8];
 
     /* This is a bit of a hack: essentially wide nodes have a fixed
      * width parameter that determines the word length of the target
@@ -73,6 +81,7 @@ int main(int argc, const char **argv)
      * constructed, which is nice because I then don't do any more
      * string munging and just use pointers. */
     wide_node::set_word_length(arg_width);
+    wide_node::set_mem_depth(arg_depth);
 
     /* Here we create two Flo files: one for input an one for output.
      * The input file is read to produce the input one (which is
@@ -96,8 +105,12 @@ int main(int argc, const char **argv)
     for (auto it = in_flo->operations(); !it.done(); ++it) {
         auto op = *it;
         auto n = narrow_op(op, arg_width);
-        for (auto it = n.begin(); it != n.end(); ++it)
-            out_flo->add_op(*it);
+        for (auto it = n.begin(); it != n.end(); ++it) {
+            auto m = split_mem(*it, arg_depth);
+
+            for (auto it = m.begin(); it != m.end(); ++it)
+                out_flo->add_op(*it);
+        }
     }
 
     /* Writes the whole output graph that was produced into a Flo
@@ -108,6 +121,20 @@ int main(int argc, const char **argv)
         fprintf(stderr, "Unable to open '%s' for writing\n",
                 arg_output.c_str());
         abort();
+    }
+
+    /* Write output, first MEM nodes and then operations. */
+    for (auto it = out_flo->nodes(); !it.done(); ++it) {
+        auto node = *it;
+
+        if (!node->is_mem())
+            continue;
+
+        fprintf(out_file, "%s = mem/%lu %lu\n",
+                node->name().c_str(),
+                node->width(),
+                node->depth()
+            );
     }
 
     for (auto it = out_flo->operations(); !it.done(); ++it) {

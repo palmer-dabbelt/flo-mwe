@@ -55,6 +55,9 @@ private:
     static size_t _word_length;
     static bool _word_length_set;
 
+    static size_t _mem_depth;
+    static bool _mem_depth_set;
+
 private:
     /* Stores the set of narrow words that coorespond to this wide
      * word. */
@@ -96,6 +99,12 @@ public:
      * length. */
     static void set_word_length(size_t word_length);
     static size_t get_word_length(void);
+
+    /* Sets a global depth paramater that refers to all memories and
+     * determines the maximum memory depth.  This works similarly to
+     * the depth parameter above. */
+    static void set_mem_depth(size_t mem_depth);
+    static size_t get_mem_depth(void);
 };
 
 #endif
