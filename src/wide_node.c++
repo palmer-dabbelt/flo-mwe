@@ -207,7 +207,7 @@ map_narrow(const std::string name,
         if (i != (node_count - 1))
             w = wide_node::get_word_length();
         else if (i > 0)
-            w = width.value() % wide_node::get_word_length();
+            w = ((width.value() - 1) % wide_node::get_word_length()) + 1;
 
         auto ptr = new narrow_node(n, w, depth, is_mem, is_const, cycle);
         out.push_back(std::shared_ptr<narrow_node>(ptr));
@@ -259,7 +259,7 @@ map_catd(const std::string name,
         if (i != (node_count - 1))
             w = wide_node::get_word_length();
         else if (i > 0)
-            w = width.value() % wide_node::get_word_length();
+            w = ((width.value() - 1) % wide_node::get_word_length()) + 1;
 
         auto ptr = new narrow_node(n, w, depth, is_mem, is_const, cycle);
         out.push_back(std::shared_ptr<narrow_node>(ptr));

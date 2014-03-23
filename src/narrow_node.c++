@@ -173,7 +173,7 @@ map_shallow(const std::string name,
         if (i != (node_count - 1))
             d = wide_node::get_mem_depth();
         else if (i > 0)
-            d = depth.value() % wide_node::get_mem_depth();
+            d = ((depth.value() - 1) % wide_node::get_mem_depth()) + 1;
 
         auto ptr = new shallow_node(n, width, d, is_mem, is_const, cycle);
         out.push_back(std::shared_ptr<shallow_node>(ptr));
