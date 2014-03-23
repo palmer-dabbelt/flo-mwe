@@ -130,6 +130,9 @@ int main(int argc, const char **argv)
         if (!node->is_mem())
             continue;
 
+        if (node->depth() > wide_node::get_mem_depth())
+            continue;
+
         fprintf(out_file, "%s = mem/%lu %lu\n",
                 node->name().c_str(),
                 node->width(),
