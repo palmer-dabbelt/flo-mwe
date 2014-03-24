@@ -355,8 +355,9 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::RST:
     case libflo::opcode::ST:
     case libflo::opcode::WR:
-        fprintf(stderr, "Can't narrow operation '%s'\n",
+        fprintf(stderr, "Can't narrow operation '%s' in ",
                 opcode_to_string(op->op()).c_str());
+        op->writeln_debug(stderr);
         abort();
     }
 
