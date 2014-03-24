@@ -65,6 +65,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         /* These are bit-wise operations, which are basically just
          * replicated N times as there's no dependencies at all! */
     case libflo::opcode::AND:
+    case libflo::opcode::IN:
     case libflo::opcode::MUX:
     case libflo::opcode::NOT:
     case libflo::opcode::OR:
@@ -335,7 +336,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::EAT:
     case libflo::opcode::EQ:
     case libflo::opcode::GTE:
-    case libflo::opcode::IN:
     case libflo::opcode::INIT:
     case libflo::opcode::LD:
     case libflo::opcode::LIT:
