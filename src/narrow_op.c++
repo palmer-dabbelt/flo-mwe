@@ -355,7 +355,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                 /* This calculates at which bit of the original,
                  * un-split word these bits will be coming from. */
                 auto lo_bit = (i * wide_node::get_word_length()) + offset;
-                auto hi_bit = lo_bit + width;
+                auto hi_bit = lo_bit + width - 1;
 
                 /* This calculates at which of the split words the
                  * data will be coming from. */
@@ -365,7 +365,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                 /* This calculates the offsets into each word where
                  * bits should be fetched from. */
                 auto lo_off = lo_bit % wide_node::get_word_length();
-                auto hi_off = hi_bit % wide_node::get_word_length();
+                auto hi_off = (hi_bit + 1) % wide_node::get_word_length();
                 auto lo_offn = narrow_node::create_const(d, lo_off);
                 auto hi_offn = narrow_node::create_const(d, 0);
 
