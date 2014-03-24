@@ -257,11 +257,11 @@ map_catd(const std::string name,
          * many nodes that are as wide as possible. */
         libflo::unknown<size_t> w = width;
         if (i != (node_count - 1))
-            w = wide_node::get_word_length();
+            w = (i + 1) * wide_node::get_word_length();
         else if (i > 0)
-            w = ((width.value() - 1) % wide_node::get_word_length()) + 1;
+            w = width.value();
 
-        auto ptr = new narrow_node(n, w, depth, is_mem, is_const, cycle);
+        auto ptr = new narrow_node(n, w, depth, is_mem, is_const, cycle, true);
         out.push_back(std::shared_ptr<narrow_node>(ptr));
     }
 

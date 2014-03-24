@@ -49,6 +49,23 @@ narrow_node::narrow_node(const std::string name,
     }
 }
 
+narrow_node::narrow_node(const std::string name,
+                         const libflo::unknown<size_t>& width,
+                         const libflo::unknown<size_t>& depth,
+                         bool is_mem,
+                         bool is_const,
+                         libflo::unknown<size_t> cycle,
+                         bool is_catd)
+    : libflo::node(name, width, depth, is_mem, is_const, cycle),
+      _sns(),
+      _sns_valid(false)
+{
+    if (!is_catd && (this->width() > wide_node::get_word_length())) {
+        fprintf(stderr, "Attempted to build a narrow node wider than a word\n");
+        abort();
+    }
+}
+
 narrow_node::snode_viter narrow_node::snodes(void)
 {
     if (_sns_valid == false) {
