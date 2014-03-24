@@ -227,6 +227,7 @@ out_t split_mem(const std::shared_ptr<libflo::operation<narrow_node>> op,
     case libflo::opcode::EQ:
     case libflo::opcode::GTE:
     case libflo::opcode::IN:
+    case libflo::opcode::INIT:
     case libflo::opcode::LD:
     case libflo::opcode::LIT:
     case libflo::opcode::LOG2:
