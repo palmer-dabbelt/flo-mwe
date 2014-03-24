@@ -330,8 +330,62 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         break;
     }
 
-    case libflo::opcode::ARSH:
+
     case libflo::opcode::CAT:
+    {
+        auto t_bit = op->t()->width();
+
+        for (size_t i = 0; i < op->d()->nnode_count(); ++i) {
+            auto d = op->d()->nnode(i);
+
+            auto lo_bit = (i + 0) * wide_node::get_word_length();
+            auto hi_bit = (i + 1) * wide_node::get_word_length();
+
+            if ((lo_bit < t_bit) && (hi_bit < t_bit)) {
+                auto mov_op = libflo::operation<narrow_node>::create(
+                    d,
+                    d->width_u(),
+                    libflo::opcode::MOV,
+                    {op->t()->nnode(i)}
+                    );
+                out.push_back(mov_op);
+            } else if ((lo_bit > t_bit) && (hi_bit > t_bit)) {
+                fprintf(stderr, "Multi-word cat high not implemented\n");
+                abort();
+            } else {
+                auto trunc = narrow_node::create_temp(op->s()->width());
+                if (op->s()->is_const()) {
+                    auto trunc_op = libflo::operation<narrow_node>::create(
+                        trunc,
+                        trunc->width(),
+                        libflo::opcode::OR,
+                        {op->s()->nnode(0), op->s()->nnode(0)}
+                        );
+                    out.push_back(trunc_op);
+                } else {
+                    auto trunc_op = libflo::operation<narrow_node>::create(
+                        trunc,
+                        trunc->width(),
+                        libflo::opcode::RSH,
+                        {op->s()->nnode(0), narrow_node::create_const(trunc, 0)}
+                        );
+                    out.push_back(trunc_op);
+                }
+
+                auto cat_op = libflo::operation<narrow_node>::create(
+                    d,
+                    op->t()->nnode(i)->width(),
+                    libflo::opcode::CAT,
+                    {trunc, op->t()->nnode(i)}
+                    );
+                out.push_back(cat_op);
+            }
+        }
+
+        break;
+    }
+
+    case libflo::opcode::ARSH:
     case libflo::opcode::CATD:
     case libflo::opcode::EAT:
     case libflo::opcode::EQ:
