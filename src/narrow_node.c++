@@ -69,6 +69,26 @@ narrow_node::snode_viter narrow_node::snodes(void)
     return snode_viter(_sns);
 }
 
+std::shared_ptr<shallow_node> narrow_node::snode(size_t i)
+{
+    if (_sns_valid == false) {
+        auto to_add = map_shallow(name(),
+                                  width_u(),
+                                  depth_u(),
+                                  is_mem(),
+                                  is_const(),
+                                  cycle_u()
+            );
+
+        for (auto it = to_add.begin(); it != to_add.end(); ++it)
+            _sns.push_back(*it);
+
+        _sns_valid = true;
+    }
+
+    return _sns[i];
+}
+
 std::shared_ptr<narrow_node>
 narrow_node::clone_from(std::shared_ptr<wide_node> w)
 {
@@ -86,7 +106,7 @@ narrow_node::create_temp(const std::shared_ptr<narrow_node> t)
     static unsigned long num = 0;
 
     char name[LINE_MAX];
-    snprintf(name, LINE_MAX, "MWET%lu", num++);
+    snprintf(name, LINE_MAX, "MWEnT%lu", num++);
 
     return std::shared_ptr<narrow_node>(new narrow_node(name,
                                                         t->width_u(),
@@ -103,7 +123,7 @@ narrow_node::create_temp(const size_t width)
     static unsigned long num = 0;
 
     char name[LINE_MAX];
-    snprintf(name, LINE_MAX, "MWEW%lu", num++);
+    snprintf(name, LINE_MAX, "MWEnW%lu", num++);
 
     return std::shared_ptr<narrow_node>(
         new narrow_node(name,
@@ -141,7 +161,7 @@ map_shallow(const std::string name,
     std::vector<std::shared_ptr<shallow_node>> out;
 
     /* Here's the number of nodes we need to build from this node. */
-    const size_t node_count =
+    const size_t node_count = (depth.value() == 0) ? 1 :
         (depth.value() + wide_node::get_mem_depth() - 1)
         / wide_node::get_mem_depth();
 
@@ -150,7 +170,7 @@ map_shallow(const std::string name,
 
         /* Avoids mangling node names that don't actually need to be
          * mangled! */
-        if (node_count == 1 || i == (node_count - 1)) {
+        if (node_count == 1) {
             snprintf(n, LINE_MAX, "%s", name.c_str());
         } else {
             snprintf(n, LINE_MAX, "%s.c%lu", name.c_str(), i);

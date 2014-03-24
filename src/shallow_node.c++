@@ -49,3 +49,56 @@ shallow_node::clone_from(std::shared_ptr<narrow_node> w)
                                                           w->is_const(),
                                                           w->cycle_u()));
 }
+
+
+std::shared_ptr<shallow_node>
+shallow_node::create_temp(const std::shared_ptr<shallow_node> t)
+{
+
+    static unsigned long num = 0;
+
+    char name[LINE_MAX];
+    snprintf(name, LINE_MAX, "MWEsT%lu", num++);
+
+    return std::shared_ptr<shallow_node>(new shallow_node(name,
+                                                          t->width_u(),
+                                                          t->depth_u(),
+                                                          t->is_mem(),
+                                                          t->is_const(),
+                                                          t->cycle_u()
+                                             ));
+
+}
+
+std::shared_ptr<shallow_node>
+shallow_node::create_temp(const size_t width)
+{
+    static unsigned long num = 0;
+
+    char name[LINE_MAX];
+    snprintf(name, LINE_MAX, "MWEsW%lu", num++);
+
+    return std::shared_ptr<shallow_node>(
+        new shallow_node(name,
+                        width,
+                        0,
+                        false,
+                        false,
+                        libflo::unknown<size_t>()
+            ));
+}
+
+std::shared_ptr<shallow_node>
+shallow_node::create_const(const std::shared_ptr<shallow_node> t, size_t value)
+{
+    char name[LINE_MAX];
+    snprintf(name, LINE_MAX, "%lu", value);
+
+    return std::shared_ptr<shallow_node>(new shallow_node(name,
+                                                          t->width_u(),
+                                                          t->depth_u(),
+                                                          t->is_mem(),
+                                                          t->is_const(),
+                                                          t->cycle_u()
+                                             ));
+}

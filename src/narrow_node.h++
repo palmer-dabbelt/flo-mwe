@@ -68,6 +68,7 @@ public:
      * that would need to be created in order to implement this node
      * on a shallow machine. */
     snode_viter snodes(void);
+    std::shared_ptr<shallow_node> snode(size_t i);
 
 public:
     /* Clones a wide node into a narrow node. */
