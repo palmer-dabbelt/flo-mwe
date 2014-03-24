@@ -330,6 +330,106 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         break;
     }
 
+        /* Shift operations*/
+    case libflo::opcode::RSH:
+    {
+        /* We only support constant-offset shifts. */
+        if (op->t()->is_const() == false) {
+            fprintf(stderr, "Only constant-offset shifts are supported\n");
+            abort();
+        } else {
+
+            for (size_t i = 0; i < op->d()->nnode_count(); ++i) {
+                auto d = op->d()->nnode(i);
+
+                size_t offset = op->t()->const_int();
+
+                /* The RSH node performs a shift and a width
+                 * modification.  This makes mapping it to short nodes
+                 * particularly tricky, as sometimes the width will be
+                 * really short. */
+                auto width = op->width();
+                if (width > wide_node::get_word_length())
+                    width = wide_node::get_word_length();
+
+                /* This calculates at which bit of the original,
+                 * un-split word these bits will be coming from. */
+                auto lo_bit = (i * wide_node::get_word_length()) + offset;
+                auto hi_bit = lo_bit + width;
+
+                /* This calculates at which of the split words the
+                 * data will be coming from. */
+                auto lo_word = lo_bit / wide_node::get_word_length();
+                auto hi_word = hi_bit / wide_node::get_word_length();
+
+                /* This calculates the offsets into each word where
+                 * bits should be fetched from. */
+                auto lo_off = lo_bit % wide_node::get_word_length();
+                auto hi_off = hi_bit % wide_node::get_word_length();
+                auto lo_offn = narrow_node::create_const(d, lo_off);
+                auto hi_offn = narrow_node::create_const(d, 0);
+
+                /* Some shifts are narrow and close enough that they
+                 * can be satisfied by a single word-length operation,
+                 * while others can't be. */
+                if (lo_word == hi_word) {
+                    auto word = lo_word;
+
+                    if (word >= op->s()->nnode_count()) {
+                        auto mov_op = libflo::operation<narrow_node>::create(
+                            d,
+                            libflo::unknown<size_t>(),
+                            libflo::opcode::MOV,
+                            {narrow_node::create_const(d, 0)}
+                            );
+                        out.push_back(mov_op);
+                    } else {
+                        auto bits = narrow_node::create_const(d, lo_off);
+                        auto rsh_op = libflo::operation<narrow_node>::create(
+                            d,
+                            d->width(),
+                            libflo::opcode::RSH,
+                            {op->s()->nnode(word), bits}
+                            );
+                    }
+                } else {
+                    auto lo_width = d->width() - lo_off;
+                    auto lo_dat = narrow_node::create_temp(lo_width);
+                    auto lo_op = libflo::operation<narrow_node>::create(
+                        lo_dat,
+                        lo_dat->width(),
+                        libflo::opcode::RSH,
+                        {op->s()->nnode(lo_word), lo_offn}
+                        );
+                    out.push_back(lo_op);
+
+                    auto hi_dat = narrow_node::create_temp(lo_off);
+                    if (hi_word < op->s()->nnode_count()) {
+                        auto hi_op = libflo::operation<narrow_node>::create(
+                            hi_dat,
+                            hi_off,
+                            libflo::opcode::RSH,
+                            {op->s()->nnode(hi_word), hi_offn}
+                            );
+                        out.push_back(hi_op);
+                    } else {
+                        hi_dat = narrow_node::create_const(hi_dat, 0);
+                    }
+
+                    auto cat_op = libflo::operation<narrow_node>::create(
+                        d,
+                        d->width_u(),
+                        libflo::opcode::CAT,
+                        {hi_dat, lo_dat}
+                        );
+                    out.push_back(cat_op);
+                    cat_op->try_infer_width();
+                }
+            }
+        }
+
+        break;
+    }
 
     case libflo::opcode::CAT:
     {
@@ -374,7 +474,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
 
                 auto cat_op = libflo::operation<narrow_node>::create(
                     d,
-                    op->t()->nnode(i)->width(),
+                    d->width_u(),
                     libflo::opcode::CAT,
                     {trunc, op->t()->nnode(i)}
                     );
@@ -405,7 +505,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::NOP:
     case libflo::opcode::RD:
     case libflo::opcode::RND:
-    case libflo::opcode::RSH:
     case libflo::opcode::RST:
     case libflo::opcode::ST:
     case libflo::opcode::WR:
