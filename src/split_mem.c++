@@ -100,7 +100,7 @@ out_t split_mem(const std::shared_ptr<libflo::operation<narrow_node>> op,
                 new_node,
                 new_node->width_u(),
                 libflo::opcode::RD,
-                {shallow_node::create_const(new_node, 1), mem, addr_lo}
+                {shallow_node::create_const(1, 1), mem, addr_lo}
                 );
             out.push_back(load_op);
 

@@ -102,3 +102,9 @@ shallow_node::create_const(const std::shared_ptr<shallow_node> t, size_t value)
                                                           t->cycle_u()
                                              ));
 }
+
+std::shared_ptr<shallow_node>
+shallow_node::create_const(size_t width, size_t value)
+{
+    return create_const(create_temp(width), value);
+}

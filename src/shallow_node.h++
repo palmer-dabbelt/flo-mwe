@@ -60,6 +60,9 @@ public:
      * above. */
     static std::shared_ptr<shallow_node>
     create_const(const std::shared_ptr<shallow_node> tplt, size_t value);
+
+    static std::shared_ptr<shallow_node>
+    create_const(size_t width, size_t value);
 };
 
 #endif
