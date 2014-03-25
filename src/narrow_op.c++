@@ -394,7 +394,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                             );
                     }
                 } else {
-                    auto lo_width = d->width() - lo_off;
+                    auto lo_width = op->s()->nnode(i)->width() - lo_off;
                     auto lo_dat = narrow_node::create_temp(lo_width);
                     auto lo_op = libflo::operation<narrow_node>::create(
                         lo_dat,
@@ -404,7 +404,8 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                         );
                     out.push_back(lo_op);
 
-                    auto hi_dat = narrow_node::create_temp(lo_off);
+                    auto hi_width = d->width() - lo_width;
+                    auto hi_dat = narrow_node::create_temp(hi_width);
                     if (hi_word < op->s()->nnode_count()) {
                         auto hi_op = libflo::operation<narrow_node>::create(
                             hi_dat,
@@ -417,14 +418,23 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                         hi_dat = narrow_node::create_const(hi_dat, 0);
                     }
 
-                    auto cat_op = libflo::operation<narrow_node>::create(
-                        d,
-                        d->width_u(),
-                        libflo::opcode::CAT,
-                        {hi_dat, lo_dat}
-                        );
-                    out.push_back(cat_op);
-                    cat_op->try_infer_width();
+                    if (d->width() != lo_width) {
+                        auto cat_op = libflo::operation<narrow_node>::create(
+                            d,
+                            d->width_u(),
+                            libflo::opcode::CAT,
+                            {hi_dat, lo_dat}
+                            );
+                        out.push_back(cat_op);
+                    } else {
+                        auto mov_op = libflo::operation<narrow_node>::create(
+                            d,
+                            d->width_u(),
+                            libflo::opcode::MOV,
+                            {lo_dat}
+                            );
+                        out.push_back(mov_op);
+                    }
                 }
             }
         }
@@ -441,8 +451,14 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
 
             auto lo_bit = (i + 0) * wide_node::get_word_length();
             auto hi_bit = (i + 1) * wide_node::get_word_length();
+            if (hi_bit > op->d()->width())
+                hi_bit = op->d()->width();
+
+            auto si = i - op->t()->nnode_count();
 
             if ((lo_bit < t_bit) && (hi_bit < t_bit)) {
+                /* The first part of a CAT can always be satisfied by
+                 * MOV operations.*/
                 auto mov_op = libflo::operation<narrow_node>::create(
                     d,
                     d->width_u(),
@@ -450,11 +466,48 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                     {op->t()->nnode(i)}
                     );
                 out.push_back(mov_op);
-            } else if ((lo_bit > t_bit) && (hi_bit > t_bit)) {
-                fprintf(stderr, "Multi-word cat high not implemented\n");
-                abort();
+            } else if ((lo_bit >= t_bit) && (hi_bit > t_bit)) {
+                /* Here's the top half of a CAT, where everything is
+                 * coming from the high node. */
+                if (hi_bit >= op->d()->width()) {
+                    if (si >= op->s()->nnode_count()) {
+                        fprintf(stderr, "si too large: %lu in ", si);
+                        op->writeln_debug(stderr);
+                        abort();
+                    }
+
+                    /* A special case: we're at the highest word.
+                     * This means there's nothing left to do but
+                     * simply copy into place the extra bits. */
+                    auto lo_bits = op->s()->nnode(si)->width() - d->width();
+                    auto lo_bitsc = narrow_node::create_const(d, lo_bits);
+
+                    auto rsh_op = libflo::operation<narrow_node>::create(
+                        d,
+                        d->width_u(),
+                        libflo::opcode::RSH,
+                        {op->s()->nnode(si), lo_bitsc}
+                        );
+                    out.push_back(rsh_op);
+                } else {
+                    fprintf(stderr, "Multi-word cat high not implemented 2\n");
+                    op->writeln_debug(stderr);
+                    abort();
+                }
             } else {
-                auto trunc = narrow_node::create_temp(op->s()->width());
+                /* This is the middle part of a CAT, which is the only
+                 * part that's taking data from both of the sources.
+                 * It's effectively the same as a RSH, but with the
+                 * extra wrinkle that neither of the widths are full
+                 * words. */
+                auto max_width = wide_node::get_word_length();
+                auto trunc_width = op->s()->width();
+                auto lo_width = op->t()->nnode(i)->width();
+                if (trunc_width + lo_width > max_width)
+                    trunc_width = max_width - lo_width;
+
+                auto trunc = narrow_node::create_temp(trunc_width);
+
                 if (op->s()->is_const()) {
                     auto trunc_op = libflo::operation<narrow_node>::create(
                         trunc,
@@ -475,7 +528,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
 
                 auto cat_op = libflo::operation<narrow_node>::create(
                     d,
-                    d->width_u(),
+                    op->t()->nnode(i)->width(),
                     libflo::opcode::CAT,
                     {trunc, op->t()->nnode(i)}
                     );
