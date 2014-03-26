@@ -30,5 +30,7 @@ TESTSRC     += counter-250-shift.bash
 TESTSRC     += counter-250-cat.bash
 TESTSRC     += counter-256.bash
 
+TESTSRC     += many_shift-64.bash
+
 TESTSRC     += mem-32-256.bash
 TESTSRC     += mem-32-4096.bash
