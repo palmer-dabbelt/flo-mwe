@@ -457,7 +457,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
 
             auto si = i - op->t()->nnode_count();
 
-            if ((lo_bit < t_bit) && (hi_bit < t_bit)) {
+            if ((lo_bit < t_bit) && (hi_bit <= t_bit)) {
                 /* The first part of a CAT can always be satisfied by
                  * MOV operations.*/
                 auto mov_op = libflo::operation<narrow_node>::create(
