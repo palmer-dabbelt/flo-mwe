@@ -18,7 +18,7 @@ then
     do
         scala -classpath chisel.jar:. test \
             --debug --genHarness --compile --test --backend c \
-            --vcd --dumpTestInput
+            --vcd --dumpTestInput --testerSeed 0
     done
 
     cp -L test.vcd gold.vcd
