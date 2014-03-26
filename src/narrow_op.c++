@@ -568,6 +568,12 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         abort();
     }
 
+    /* Here's an early out: if there's only one destination node then
+     * there's no reason to bother emiting a CATD to put them
+     * together. */
+    if (op->d()->nnode_count() == 1)
+        return out;
+
     /* We now need to CATD together a bunch of nodes such that they
      * produce exactly the same result as the wide operation would. */
 
