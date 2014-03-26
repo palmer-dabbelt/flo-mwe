@@ -118,6 +118,18 @@ narrow_node::clone_from(std::shared_ptr<wide_node> w)
 }
 
 std::shared_ptr<narrow_node>
+narrow_node::clone_from(std::shared_ptr<wide_node> w, bool force)
+{
+    return std::shared_ptr<narrow_node>(new narrow_node(w->name(),
+                                                        w->width_u(),
+                                                        w->depth_u(),
+                                                        w->is_mem(),
+                                                        w->is_const(),
+                                                        w->cycle_u(),
+                                                        force));
+}
+
+std::shared_ptr<narrow_node>
 narrow_node::create_temp(const std::shared_ptr<narrow_node> t)
 {
     static unsigned long num = 0;

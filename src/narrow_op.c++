@@ -65,7 +65,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         /* These are bit-wise operations, which are basically just
          * replicated N times as there's no dependencies at all! */
     case libflo::opcode::AND:
-    case libflo::opcode::IN:
     case libflo::opcode::MOV:
     case libflo::opcode::MUX:
     case libflo::opcode::NOT:
@@ -98,6 +97,38 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                                                               op->op(),
                                                               svec);
             out.push_back(ptr);
+        }
+
+        break;
+    }
+
+    case libflo::opcode::IN:
+    {
+        /* IN can be a special case: in order to generate code that
+         * matches with the C++ test harness we need to */
+        auto wide_in = narrow_node::clone_from(op->d(), true);
+        auto wide_op = libflo::operation<narrow_node>::create(
+            wide_in,
+            wide_in->width_u(),
+            libflo::opcode::IN,
+            {}
+            );
+        out.push_back(wide_op);
+
+        /* Now we actually go ahead and do all the CAT nodes. */
+        for (size_t i = 0; i < op->d()->nnode_count(); ++i) {
+            auto d = op->d()->nnode(i);
+
+            auto offset = i * wide_node::get_word_length();
+            auto offsetc = narrow_node::create_const(d, offset);
+
+            auto rshd_op = libflo::operation<narrow_node>::create(
+                d,
+                d->width_u(),
+                libflo::opcode::RSHD,
+                {wide_in, offsetc}
+                );
+            out.push_back(rshd_op);
         }
 
         break;
@@ -339,7 +370,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
             fprintf(stderr, "Only constant-offset shifts are supported\n");
             abort();
         } else {
-
             for (size_t i = 0; i < op->d()->nnode_count(); ++i) {
                 auto d = op->d()->nnode(i);
 
@@ -580,6 +610,10 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
      * there's no reason to bother emiting a CATD to put them
      * together. */
     if (op->d()->nnode_count() == 1)
+        return out;
+
+    /* IN nodes aren't handled with a CATD at all. */
+    if (op->op() == libflo::opcode::IN)
         return out;
 
     /* We now need to CATD together a bunch of nodes such that they

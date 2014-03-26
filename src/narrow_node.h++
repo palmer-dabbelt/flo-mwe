@@ -83,6 +83,13 @@ public:
     static std::shared_ptr<narrow_node>
     clone_from(std::shared_ptr<wide_node> w);
 
+    /* Allows us to force the creation of a narrow node that's
+     * actually wide.  This is actually a pretty unsafe operation and
+     * should probably be deprecated, but it's necessary to support IN
+     * nodes... */
+    static std::shared_ptr<narrow_node>
+    clone_from(std::shared_ptr<wide_node> w, bool force);
+
     /* Creates a automatically named temporary node based on the
      * template of another node.  The idea is that this new node has
      * all the same properties but is otherwise not associated with

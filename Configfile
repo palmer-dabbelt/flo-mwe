@@ -34,5 +34,7 @@ TESTSRC     += many_shift-64.bash
 TESTSRC     += cat-8-8.bash
 TESTSRC     += cat-26-26.bash
 
+TESTSRC     += in-64.bash
+
 TESTSRC     += mem-32-256.bash
 TESTSRC     += mem-32-4096.bash
