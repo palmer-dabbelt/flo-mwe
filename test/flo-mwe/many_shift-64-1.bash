@@ -6,28 +6,18 @@ import Chisel._
 
 class test extends Module {
   val io = new Bundle {
+    val i = UInt(INPUT, width = 64)
     val o = Vec.fill(64){ UInt(OUTPUT, width = 1) }
   }
 
-  val r_lo = Reg(init = UInt(5381, width = 32))
-  val lo = UInt(width = 27); lo := r_lo
-  r_lo := (lo << UInt(5)) + r_lo;
-
-  val r_hi = Reg(init = UInt(5381, width = 32))
-  val hi = UInt(width = 27); hi := r_hi
-  r_hi := (hi << UInt(5)) + r_hi + r_lo
-
-  val r = Cat(r_hi, r_lo)
-
-  for (i <- 0 until 64) { io.o(i) := r >> UInt(i) }
+  for (i <- 0 until 64) { io.o(i) := io.i >> UInt(i) }
 }
 
 class tests(t: test) extends Tester(t) {
-  var cycle = 0
-  do {
+  for (i <- 1 until 100) {
+    poke(t.io.i, BigInt(64, rnd))
     step(1)
-    cycle += 1
-  } while (cycle < 10)
+  }
 }
 
 object test {
