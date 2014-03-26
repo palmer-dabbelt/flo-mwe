@@ -540,8 +540,16 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         break;
     }
 
-    case libflo::opcode::ARSH:
+        /* Some operations are fundamentally unsplitable. */
     case libflo::opcode::CATD:
+    case libflo::opcode::RSHD:
+        fprintf(stderr, "It's impossible to narrow debug operations\n");
+        op->writeln_debug(stderr);
+        abort();
+        break;
+
+
+    case libflo::opcode::ARSH:
     case libflo::opcode::EAT:
     case libflo::opcode::EQ:
     case libflo::opcode::GTE:

@@ -247,6 +247,7 @@ out_t split_mem(const std::shared_ptr<libflo::operation<narrow_node>> op,
     case libflo::opcode::REG:
     case libflo::opcode::RND:
     case libflo::opcode::RSH:
+    case libflo::opcode::RSHD:
     case libflo::opcode::RST:
     case libflo::opcode::ST:
     case libflo::opcode::SUB:
