@@ -331,7 +331,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         break;
     }
 
-        /* Shift operations*/
+        /* Shift operations */
     case libflo::opcode::RSH:
     {
         /* We only support constant-offset shifts. */
@@ -392,6 +392,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                             libflo::opcode::RSH,
                             {op->s()->nnode(word), bits}
                             );
+                        out.push_back(rsh_op);
                     }
                 } else {
                     auto lo_width = op->s()->nnode(i)->width() - lo_off;
