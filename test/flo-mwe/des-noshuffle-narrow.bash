@@ -1,14 +1,9 @@
 #include "tempdir.bash"
 #include "chisel-jar.bash"
 
-ln -s NarrowDES.flo test.flo
-ln -s NarrowDES.vcd test.vcd
-ln -s NarrowDES-emulator.cpp test-emulator.cpp
-ln -s NarrowDES.stdin test.stdin
-ln -s NarrowDES.h test.h
-touch NarrowDES.stdin
+TEST="NarrowDES"
 
-cat >test.scala <<EOF
+cat >NarrowDES.scala <<EOF
 import Chisel._
 import scala.collection.mutable.ArrayBuffer
 
@@ -308,7 +303,7 @@ object Utils {
     }
 }
 
-object test {
+object NarrowDES {
   def main(args: Array[String]): Unit = {
     chiselMainTest(args, () => Module(new NarrowDES())){ c => new NarrowDESTester(c) }
   }

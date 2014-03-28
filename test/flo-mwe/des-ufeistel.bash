@@ -1,14 +1,9 @@
 #include "tempdir.bash"
 #include "chisel-jar.bash"
 
-ln -s Feistel.flo test.flo
-ln -s Feistel.vcd test.vcd
-ln -s Feistel-emulator.cpp test-emulator.cpp
-ln -s Feistel.stdin test.stdin
-ln -s Feistel.h test.h
-touch Feistel.stdin
+TEST="Feistel"
 
-cat >test.scala <<EOF
+cat >Feistel.scala <<EOF
 import Chisel._
 import scala.collection.mutable.ArrayBuffer
 
@@ -280,7 +275,7 @@ object Utils {
     }
 }
 
-object test {
+object Feistel {
   def main(args: Array[String]): Unit = {
     chiselMainTest(args, () => Module(new Feistel())){ c => new FeistelTester(c) }
   }
