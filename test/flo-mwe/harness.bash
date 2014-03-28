@@ -71,8 +71,7 @@ time opt exe.llvm -S > opt.llvm
 # Runs the new emulator inside the LLVM interpreter (or probably JIT
 # compiler, if you're using a sane architecture).
 time llc opt.llvm -o opt.S
-time as -g opt.S -o opt.o
-time clang++ -g opt.o -o opt
+time clang++ -g opt.S -o opt
 if test -f test.stdin
 then
     cp test.stdin test.stdin.copy
