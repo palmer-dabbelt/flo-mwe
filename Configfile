@@ -44,3 +44,4 @@ TESTSRC     += mem-32-4096.bash
 TESTSRC     += des-sbox.bash
 TESTSRC     += des-ufeistel.bash
 TESTSRC     += des-noshuffle.bash
+TESTSRC     += des-noshuffle-narrow.bash
