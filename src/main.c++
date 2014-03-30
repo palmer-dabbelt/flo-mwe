@@ -25,6 +25,7 @@
 #include "version.h"
 #include "wide_node.h++"
 #include <libflo/flo.h++>
+#include <libflo/sizet_printf.h++>
 #include <stdlib.h>
 #include <string>
 using namespace libflo;
@@ -135,7 +136,7 @@ int main(int argc, const char **argv)
         if (node->depth() > wide_node::get_mem_depth())
             continue;
 
-        fprintf(out_file, "%s = mem/%lu %lu\n",
+        fprintf(out_file, "%s = mem/" SIZET_FORMAT " " SIZET_FORMAT "\n",
                 node->name().c_str(),
                 node->width(),
                 node->depth()
