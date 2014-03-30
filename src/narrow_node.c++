@@ -20,6 +20,7 @@
  */
 
 #include "narrow_node.h++"
+#include <libflo/sizet_printf.h++>
 
 #ifndef LINE_MAX
 #define LINE_MAX 1024
@@ -168,7 +169,7 @@ std::shared_ptr<narrow_node>
 narrow_node::create_const(const std::shared_ptr<narrow_node> t, size_t value)
 {
     char name[LINE_MAX];
-    snprintf(name, LINE_MAX, "%lu", value);
+    snprintf(name, LINE_MAX, SIZET_FORMAT, value);
 
     return std::shared_ptr<narrow_node>(new narrow_node(name,
                                                         t->width_u(),
@@ -202,7 +203,7 @@ map_shallow(const std::string name,
         if (node_count == 1) {
             snprintf(n, LINE_MAX, "%s", name.c_str());
         } else {
-            snprintf(n, LINE_MAX, "%s.c%lu", name.c_str(), i);
+            snprintf(n, LINE_MAX, "%s.c" SIZET_FORMAT, name.c_str(), i);
         }
 
         /* FIXME: This silently drops the high-order bits of

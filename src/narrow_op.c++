@@ -502,7 +502,8 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                  * coming from the high node. */
                 if (hi_bit >= op->d()->width()) {
                     if (si >= op->s()->nnode_count()) {
-                        fprintf(stderr, "si too large: %lu in ", si);
+                        fprintf(stderr, "si too large: " SIZET_FORMAT " in ",
+                                si);
                         op->writeln_debug(stderr);
                         abort();
                     }

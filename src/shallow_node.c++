@@ -20,6 +20,7 @@
  */
 
 #include "shallow_node.h++"
+#include <libflo/sizet_printf.h++>
 
 #ifndef LINE_MAX
 #define LINE_MAX 1024
@@ -92,7 +93,7 @@ std::shared_ptr<shallow_node>
 shallow_node::create_const(const std::shared_ptr<shallow_node> t, size_t value)
 {
     char name[LINE_MAX];
-    snprintf(name, LINE_MAX, "%lu", value);
+    snprintf(name, LINE_MAX, SIZET_FORMAT, value);
 
     return std::shared_ptr<shallow_node>(new shallow_node(name,
                                                           t->width_u(),

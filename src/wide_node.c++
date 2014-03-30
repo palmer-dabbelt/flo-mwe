@@ -20,6 +20,7 @@
  */
 
 #include "wide_node.h++"
+#include <libflo/sizet_printf.h++>
 
 #ifndef LINE_MAX
 #define LINE_MAX 1024
@@ -187,7 +188,7 @@ map_narrow(const std::string name,
         if (node_count == 1) {
             snprintf(n, LINE_MAX, "%s", name.c_str());
         } else {
-            snprintf(n, LINE_MAX, "%s.%lu", name.c_str(), i);
+            snprintf(n, LINE_MAX, "%s." SIZET_FORMAT, name.c_str(), i);
         }
 
         /* FIXME: This silently drops the high-order bits of
@@ -239,7 +240,7 @@ map_catd(const std::string name,
         if (node_count == 1 || i == (node_count - 1)) {
             snprintf(n, LINE_MAX, "%s", name.c_str());
         } else {
-            snprintf(n, LINE_MAX, "%s.c%lu", name.c_str(), i);
+            snprintf(n, LINE_MAX, "%s.c" SIZET_FORMAT, name.c_str(), i);
         }
 
         /* FIXME: This silently drops the high-order bits of
