@@ -23,6 +23,23 @@
 
 typedef std::vector<std::shared_ptr<libflo::operation<narrow_node>>> out_t;
 
+/* Bit-Field EXTract: given a wide node this outputs a narrow node
+ * that contains the given bit field.  This will output any necessary
+ * operations out to the output field.  One of these takes a named
+ * output node, the other generates one. */
+static __inline__
+std::shared_ptr<narrow_node> bfext(out_t& out,
+                                   size_t width,
+                                   const std::shared_ptr<wide_node>& w,
+                                   size_t offset,
+                                   size_t count);
+static void bfext(std::shared_ptr<narrow_node>& n,
+                  out_t& out,
+                  size_t width,
+                  const std::shared_ptr<wide_node>& w,
+                  size_t offset,
+                  size_t count);
+
 out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                 size_t width)
 {
@@ -485,8 +502,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
             if (hi_bit > op->d()->width())
                 hi_bit = op->d()->width();
 
-            auto si = i - op->t()->nnode_count();
-
             if ((lo_bit < t_bit) && (hi_bit <= t_bit)) {
                 /* The first part of a CAT can always be satisfied by
                  * MOV operations.*/
@@ -498,34 +513,13 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                     );
                 out.push_back(mov_op);
             } else if ((lo_bit >= t_bit) && (hi_bit > t_bit)) {
-                /* Here's the top half of a CAT, where everything is
-                 * coming from the high node. */
-                if (hi_bit >= op->d()->width()) {
-                    if (si >= op->s()->nnode_count()) {
-                        fprintf(stderr, "si too large: " SIZET_FORMAT " in ",
-                                si);
-                        op->writeln_debug(stderr);
-                        abort();
-                    }
-
-                    /* A special case: we're at the highest word.
-                     * This means there's nothing left to do but
-                     * simply copy into place the extra bits. */
-                    auto lo_bits = op->s()->nnode(si)->width() - d->width();
-                    auto lo_bitsc = narrow_node::create_const(d, lo_bits);
-
-                    auto rsh_op = libflo::operation<narrow_node>::create(
-                        d,
-                        d->width_u(),
-                        libflo::opcode::RSH,
-                        {op->s()->nnode(si), lo_bitsc}
-                        );
-                    out.push_back(rsh_op);
-                } else {
-                    fprintf(stderr, "Multi-word cat high not implemented 2\n");
-                    op->writeln_debug(stderr);
-                    abort();
-                }
+                bfext(d,
+                      out,
+                      width,
+                      op->s(),
+                      lo_bit - op->t()->width(),
+                      hi_bit - lo_bit
+                    );
             } else {
                 /* This is the middle part of a CAT, which is the only
                  * part that's taking data from both of the sources.
@@ -653,4 +647,74 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     }
 
     return out;
+}
+
+std::shared_ptr<narrow_node> bfext(out_t& out,
+                                   size_t width,
+                                   const std::shared_ptr<wide_node>& w,
+                                   size_t offset,
+                                   size_t count)
+{
+    auto n = narrow_node::create_temp(count);
+    bfext(n, out, width, w, offset, count);
+    return n;
+}
+
+void bfext(std::shared_ptr<narrow_node>& n,
+           out_t& out,
+           size_t width,
+           const std::shared_ptr<wide_node>& w,
+           size_t offset,
+           size_t count)
+{
+    size_t lo_word = offset / width;
+    size_t hi_word = (offset + count - 1) / width;
+
+    if (lo_word == hi_word) {
+        auto moffset = offset % width;
+        auto rsh_op = libflo::operation<narrow_node>::create(
+            n,
+            n->width_u(),
+            libflo::opcode::RSH,
+            {w->nnode(lo_word), narrow_node::create_const(moffset)}
+            );
+        out.push_back(rsh_op);
+    } else if (hi_word == (lo_word + 1)) {
+        auto lo_offset = offset % width;
+
+        auto lo_width = w->nnode(lo_word)->width() - lo_offset;
+        auto lo_dat = narrow_node::create_temp(lo_width);
+        auto lo_op = libflo::operation<narrow_node>::create(
+            lo_dat,
+            lo_dat->width_u(),
+            libflo::opcode::RSH,
+            {w->nnode(lo_word), narrow_node::create_const(lo_offset)}
+            );
+        out.push_back(lo_op);
+
+        auto hi_width = n->width() - lo_width;
+        auto hi_dat = narrow_node::create_temp(hi_width);
+        auto hi_op = libflo::operation<narrow_node>::create(
+            hi_dat,
+            hi_dat->width_u(),
+            libflo::opcode::RSH,
+            {w->nnode(hi_word), narrow_node::create_const(0)}
+            );
+        out.push_back(hi_op);
+
+        auto cat_op = libflo::operation<narrow_node>::create(
+            n,
+            n->width_u(),
+            libflo::opcode::CAT,
+            {hi_dat, lo_dat}
+            );
+        out.push_back(cat_op);
+    } else {
+        fprintf(stderr, "Non-contiguous words extracted\n");
+        fprintf(stderr, "  offset: " SIZET_FORMAT "\n", offset);
+        fprintf(stderr, "  count: " SIZET_FORMAT "\n", count);
+        fprintf(stderr, "  lo_word: " SIZET_FORMAT "\n", lo_word);
+        fprintf(stderr, "  hi_word: " SIZET_FORMAT "\n", hi_word);
+        abort();
+    }
 }

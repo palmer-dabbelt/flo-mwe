@@ -105,6 +105,21 @@ public:
      * the depth parameter above. */
     static void set_mem_depth(size_t mem_depth);
     static size_t get_mem_depth(void);
+
+    /* Creates a automatically named temporary node based on the
+     * template of another node.  The idea is that this new node has
+     * all the same properties but is otherwise not associated with
+     * the original node. */
+    static std::shared_ptr<wide_node>
+    create_temp(const std::shared_ptr<wide_node> tplt);
+
+    static std::shared_ptr<wide_node>
+    create_temp(const size_t width);
+
+    /* Creates a constant, otherwise copying from the template like
+     * above. */
+    static std::shared_ptr<wide_node>
+    create_const(const std::shared_ptr<wide_node> tplt, size_t value);
 };
 
 #endif
