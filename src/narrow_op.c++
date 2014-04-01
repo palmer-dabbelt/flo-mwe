@@ -27,12 +27,14 @@ typedef std::vector<std::shared_ptr<libflo::operation<narrow_node>>> out_t;
  * that contains the given bit field.  This will output any necessary
  * operations out to the output field.  One of these takes a named
  * output node, the other generates one. */
+#if 0
 static __inline__
 std::shared_ptr<narrow_node> bfext(out_t& out,
                                    size_t width,
                                    const std::shared_ptr<wide_node>& w,
                                    size_t offset,
                                    size_t count);
+#endif
 static void bfext(std::shared_ptr<narrow_node>& n,
                   out_t& out,
                   size_t width,
@@ -649,6 +651,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     return out;
 }
 
+#if 0
 std::shared_ptr<narrow_node> bfext(out_t& out,
                                    size_t width,
                                    const std::shared_ptr<wide_node>& w,
@@ -659,6 +662,7 @@ std::shared_ptr<narrow_node> bfext(out_t& out,
     bfext(n, out, width, w, offset, count);
     return n;
 }
+#endif
 
 void bfext(std::shared_ptr<narrow_node>& n,
            out_t& out,
