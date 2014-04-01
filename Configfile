@@ -36,6 +36,7 @@ TESTSRC     += cat-8-8.bash
 TESTSRC     += cat-26-26.bash
 TESTSRC     += cat-32-1.bash
 TESTSRC     += cat-33-1.bash
+TESTSRC     += many_cat-48.bash
 
 TESTSRC     += in-64.bash
 
