@@ -104,6 +104,12 @@ public:
      * above. */
     static std::shared_ptr<narrow_node>
     create_const(const std::shared_ptr<narrow_node> tplt, size_t value);
+
+    /* This constant is created with the smallest width that will fit
+     * it, which is useful for shift operations.  Be careful using it
+     * in other places, as it can easily generate invalid widths. */
+    static std::shared_ptr<narrow_node>
+    create_const(size_t value);
 };
 
 #endif

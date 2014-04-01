@@ -21,6 +21,7 @@
 
 #include "narrow_node.h++"
 #include <libflo/sizet_printf.h++>
+#include <math.h>
 
 #ifndef LINE_MAX
 #define LINE_MAX 1024
@@ -177,6 +178,23 @@ narrow_node::create_const(const std::shared_ptr<narrow_node> t, size_t value)
                                                         t->is_mem(),
                                                         t->is_const(),
                                                         t->cycle_u()
+                                            ));
+}
+
+std::shared_ptr<narrow_node>
+narrow_node::create_const(size_t value)
+{
+    char name[LINE_MAX];
+    snprintf(name, LINE_MAX, SIZET_FORMAT, value);
+
+    size_t width = (value <= 1) ? 1 : (ceil(log2(value)) + 1);
+
+    return std::shared_ptr<narrow_node>(new narrow_node(name,
+                                                        width,
+                                                        0,
+                                                        false,
+                                                        true,
+                                                        0
                                             ));
 }
 
