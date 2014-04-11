@@ -108,6 +108,26 @@ std::shared_ptr<shallow_node> narrow_node::snode(size_t i)
     return _sns[i];
 }
 
+size_t narrow_node::snode_count(void)
+{
+    if (_sns_valid == false) {
+        auto to_add = map_shallow(name(),
+                                  width_u(),
+                                  depth_u(),
+                                  is_mem(),
+                                  is_const(),
+                                  cycle_u()
+            );
+
+        for (auto it = to_add.begin(); it != to_add.end(); ++it)
+            _sns.push_back(*it);
+
+        _sns_valid = true;
+    }
+
+    return _sns.size();
+}
+
 std::shared_ptr<narrow_node>
 narrow_node::clone_from(std::shared_ptr<wide_node> w)
 {
