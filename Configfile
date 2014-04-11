@@ -43,6 +43,7 @@ TESTSRC     += in-64.bash
 TESTSRC     += mem-32-256.bash
 TESTSRC     += mem-32-4096.bash
 TESTSRC     += rom-16-4096.bash
+TESTSRC     += ordered_mem-32-4096.bash
 
 TESTSRC     += des.bash
 TESTSRC     += des-sbox.bash
