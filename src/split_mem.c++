@@ -124,7 +124,7 @@ out_t split_mem(const std::shared_ptr<libflo::operation<narrow_node>> op,
                     mux_node,
                     mux_node->width_u(),
                     libflo::opcode::MUX,
-                    {index_match, prev_node, new_node}
+                    {index_match, new_node, prev_node}
                     );
                 out.push_back(mux_op);
                 new_node = mux_node;
