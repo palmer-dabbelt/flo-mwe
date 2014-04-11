@@ -218,6 +218,31 @@ out_t split_mem(const std::shared_ptr<libflo::operation<narrow_node>> op,
         break;
     }
 
+    case libflo::opcode::INIT:
+    {
+        size_t addr_hi = op->t()->const_int() / depth;
+        size_t addr_lo = op->t()->const_int() % depth;
+        auto addr_loc = shallow_node::create_const(op->s()->snode(0), addr_lo);
+
+        if (addr_hi >= op->s()->snode_count()) {
+            fprintf(stderr, "INIT shallow %lu on %s\n",
+                    addr_hi,
+                    op->s()->name().c_str()
+                );
+        }
+
+        auto d = shallow_node::create_temp(1);
+        auto d_op = libflo::operation<shallow_node>::create(
+            d,
+            d->width_u(),
+            libflo::opcode::INIT,
+            {op->s()->snode(addr_hi), addr_loc, op->u()->snode(0)}
+            );
+        out.push_back(d_op);
+
+        break;
+    }
+
     case libflo::opcode::ADD:
     case libflo::opcode::AND:
     case libflo::opcode::ARSH:
@@ -227,7 +252,6 @@ out_t split_mem(const std::shared_ptr<libflo::operation<narrow_node>> op,
     case libflo::opcode::EQ:
     case libflo::opcode::GTE:
     case libflo::opcode::IN:
-    case libflo::opcode::INIT:
     case libflo::opcode::LD:
     case libflo::opcode::LIT:
     case libflo::opcode::LOG2:
