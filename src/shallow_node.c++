@@ -97,15 +97,24 @@ shallow_node::create_const(const std::shared_ptr<shallow_node> t, size_t value)
 
     return std::shared_ptr<shallow_node>(new shallow_node(name,
                                                           t->width_u(),
-                                                          t->depth_u(),
-                                                          t->is_mem(),
-                                                          t->is_const(),
-                                                          t->cycle_u()
+                                                          0,
+                                                          false,
+                                                          true,
+                                                          0
                                              ));
 }
 
 std::shared_ptr<shallow_node>
 shallow_node::create_const(size_t width, size_t value)
 {
-    return create_const(create_temp(width), value);
+    char name[LINE_MAX];
+    snprintf(name, LINE_MAX, SIZET_FORMAT, value);
+
+    return std::shared_ptr<shallow_node>(new shallow_node(name,
+                                                          width,
+                                                          0,
+                                                          false,
+                                                          true,
+                                                          0
+                                             ));
 }
