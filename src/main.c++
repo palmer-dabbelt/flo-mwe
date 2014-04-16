@@ -140,7 +140,7 @@ int main(int argc, const char **argv)
         if (node->depth() > wide_node::get_mem_depth())
             continue;
 
-        fprintf(out_file, "%s = mem/" SIZET_FORMAT " " SIZET_FORMAT "\n",
+        fprintf(out_file, "%s = mem'" SIZET_FORMAT " " SIZET_FORMAT "\n",
                 node->name().c_str(),
                 node->width(),
                 node->depth()
