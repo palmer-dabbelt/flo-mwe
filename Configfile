@@ -15,9 +15,13 @@ GENERATE    += version.h
 
 # This binary expands multi-word Flo operations into multiple
 # single-word operations, producing another Flo file as the output.
-BINARIES    += flo-mwe
+# This version outputs some special nodes that are understood by the
+# LLVM backend and used to map between narrow and wide nodes, which is
+# why it's in libexec by default.
+BINARIES    += flo-mwe-mapping
 COMPILEOPTS += `ppkg-config flo --cflags`
 LINKOPTS    += `ppkg-config flo --libs`
+COMPILEOPTS += -DMAPPING
 SOURCES     += main.c++
 
 TESTSRC     += counter-32.bash
@@ -51,3 +55,10 @@ TESTSRC     += des-ufeistel.bash
 TESTSRC     += des-feistel.bash
 TESTSRC     += des-noshuffle.bash
 TESTSRC     += des-noshuffle-narrow.bash
+
+# This binary expands multi-word Flo operations without generating the
+# mapping info.
+BINARIES    += flo-mwe
+COMPILEOPTS += `ppkg-config flo --cflags`
+LINKOPTS    += `ppkg-config flo --libs`
+SOURCES     += main.c++

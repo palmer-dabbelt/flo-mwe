@@ -89,6 +89,11 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::OUT:
     case libflo::opcode::REG:
     case libflo::opcode::XOR:
+#ifndef MAPPING
+    /* If there's no IO mapping needed then we just need to split
+     * inputs bitwise, otherwise they'll be split using RSHD nodes. */
+    case libflo::opcode::IN:
+#endif
     {
         for (size_t i = 0; i < op->d()->nnode_count(); ++i) {
             auto d = op->d()->nnode(i);
@@ -116,6 +121,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         break;
     }
 
+#ifdef MAPPING
     case libflo::opcode::IN:
     {
         /* IN can be a special case: in order to generate code that
@@ -147,6 +153,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
 
         break;
     }
+#endif
 
         /* Addition requires a carry chain.  There's no Flo
          * instruction for carry chains, so I borrowed this algorithm
@@ -609,8 +616,10 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         return out;
 
     /* We now need to CATD together a bunch of nodes such that they
-     * produce exactly the same result as the wide operation would. */
+     * produce exactly the same result as the wide operation would.
+     * This mapping is not produced for all configurations. */
 
+#ifdef MAPPING
     /* This contains the previous node in the chain. */
     std::shared_ptr<narrow_node> prev = NULL;
 
@@ -642,6 +651,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         out.push_back(ptr);
         prev = next;
     }
+#endif
 
     return out;
 }
