@@ -98,20 +98,15 @@ int main(int argc, const char **argv)
      * general idea here is that we know all these will eventually end
      * up in the output file -- there may be more internal temporary
      * nodes, but at least we need all of these to exist. */
-    for (auto it = in_flo->nodes(); !it.done(); ++it) {
-        auto wnode = *it;
-        for (auto it = wnode->nnodes(); !it.done(); ++it) {
-            auto nnode = *it;
-            for (auto it = nnode->snodes(); !it.done(); ++it)
-                out_flo->add_node(*it);
-        }
-    }
+    for (const auto& wnode: in_flo->nodes())
+        for (const auto& nnode: wnode->nnodes())
+            for (const auto& snode: nnode->snodes())
+                out_flo->add_node(snode);
 
     /* Walks through each operation, converting it from an operation
      * that consumes potientally-wide nodes to one that consumes
      * definately-narrow nodes. */
-    for (auto it = in_flo->operations(); !it.done(); ++it) {
-        auto op = *it;
+    for (const auto& op: in_flo->operations()) {
         auto n = narrow_op(op, arg_width);
         for (auto it = n.begin(); it != n.end(); ++it) {
             auto m = split_mem(*it, arg_depth);
@@ -131,9 +126,7 @@ int main(int argc, const char **argv)
     }
 
     /* Write output, first MEM nodes and then operations. */
-    for (auto it = out_flo->nodes(); !it.done(); ++it) {
-        auto node = *it;
-
+    for (const auto& node: out_flo->nodes()) {
         if (!node->is_mem())
             continue;
 
@@ -147,10 +140,8 @@ int main(int argc, const char **argv)
             );
     }
 
-    for (auto it = out_flo->operations(); !it.done(); ++it) {
-        auto op = *it;
+    for (const auto& op: out_flo->operations())
         op->writeln(out_file);
-    }
 
     fclose(out_file);
 }

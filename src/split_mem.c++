@@ -31,19 +31,17 @@ out_t split_mem(const std::shared_ptr<libflo::operation<narrow_node>> op,
      * anything up I just output those nodes directly. */
     {
         bool too_deep = false;
-        for (auto it = op->operands(); !it.done(); ++it) {
-            auto op = *it;
-            if (op->depth() > depth)
+        for (const auto& o: op->operands())
+            if (o->depth() > depth)
                 too_deep = true;
-        }
 
         if (too_deep == false) {
             std::shared_ptr<shallow_node> d;
             std::vector<std::shared_ptr<shallow_node>> s;
 
             d = shallow_node::clone_from(op->d());
-            for (auto it = op->sources(); !it.done(); ++it)
-                s.push_back(shallow_node::clone_from(*it));
+            for (const auto& source: op->sources())
+                s.push_back(shallow_node::clone_from(source));
 
             out_t out;
             auto ptr = libflo::operation<shallow_node>::create(d,
@@ -91,9 +89,7 @@ out_t split_mem(const std::shared_ptr<libflo::operation<narrow_node>> op,
         size_t index = 0;
         auto prev_node = shallow_node::create_temp(op->d()->snode(0));
 
-        for (auto it = op->t()->snodes(); !it.done(); ++it) {
-            auto mem = *it;
-
+        for (const auto& mem: op->t()->snodes()) {
             /* Load the memory into a new node. */
             auto new_node = shallow_node::create_temp(prev_node);
             auto load_op = libflo::operation<shallow_node>::create(
@@ -180,9 +176,7 @@ out_t split_mem(const std::shared_ptr<libflo::operation<narrow_node>> op,
          * now. */
         size_t index = 0;
 
-        for (auto it = op->t()->snodes(); !it.done(); ++it) {
-            auto mem = *it;
-
+        for (const auto& mem: op->t()->snodes()) {
             auto index_const = shallow_node::create_const(addr_hi, index);
 
             auto index_match = shallow_node::create_temp(1);

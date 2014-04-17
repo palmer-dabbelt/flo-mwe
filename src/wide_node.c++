@@ -63,7 +63,7 @@ wide_node::wide_node(const std::string name,
 {
 }
 
-wide_node::nnode_viter wide_node::nnodes(void)
+std::vector<std::shared_ptr<narrow_node>> wide_node::nnodes(void)
 {
     if (_nns_valid == false) {
         auto to_add = map_narrow(name(),
@@ -71,7 +71,7 @@ wide_node::nnode_viter wide_node::nnodes(void)
                                  depth_u(),
                                  is_mem(),
                                  is_const(),
-                                 cycle_u()
+                                 dfdepth_u()
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)
@@ -80,7 +80,7 @@ wide_node::nnode_viter wide_node::nnodes(void)
         _nns_valid = true;
     }
 
-    return nnode_viter(_nns);
+    return _nns;
 }
 
 std::shared_ptr<narrow_node> wide_node::nnode(size_t i)
@@ -91,7 +91,7 @@ std::shared_ptr<narrow_node> wide_node::nnode(size_t i)
                                  depth_u(),
                                  is_mem(),
                                  is_const(),
-                                 cycle_u()
+                                 dfdepth_u()
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)
@@ -111,7 +111,7 @@ std::shared_ptr<narrow_node> wide_node::catdnode(size_t i)
                                depth_u(),
                                is_mem(),
                                is_const(),
-                               cycle_u()
+                               dfdepth_u()
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)

@@ -48,7 +48,7 @@ shallow_node::clone_from(std::shared_ptr<narrow_node> w)
                                                           w->depth_u(),
                                                           w->is_mem(),
                                                           w->is_const(),
-                                                          w->cycle_u()));
+                                                          w->dfdepth_u()));
 }
 
 
@@ -66,7 +66,7 @@ shallow_node::create_temp(const std::shared_ptr<shallow_node> t)
                                                           t->depth_u(),
                                                           t->is_mem(),
                                                           t->is_const(),
-                                                          t->cycle_u()
+                                                          t->dfdepth_u()
                                              ));
 
 }

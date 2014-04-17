@@ -49,11 +49,9 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
      * in which case we don't really have to do anything. */
     {
         bool too_large = false;
-        for (auto it = op->operands(); !it.done(); ++it) {
-            auto op = *it;
-            if (op->width() > width)
+        for (const auto& o: op->operands())
+            if (o->width() > width)
                 too_large = true;
-        }
 
         /* If none of the operands were too large to fit within a
          * machine word then just do the cast. */
@@ -62,8 +60,8 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
             std::vector<std::shared_ptr<narrow_node>> s;
 
             d = narrow_node::clone_from(op->d());
-            for (auto it = op->sources(); !it.done(); ++it)
-                s.push_back(narrow_node::clone_from(*it));
+            for (const auto& source: op->sources())
+                s.push_back(narrow_node::clone_from(source));
 
             auto ptr = libflo::operation<narrow_node>::create(d,
                                                               op->width_u(),
@@ -92,14 +90,11 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::REG:
     case libflo::opcode::XOR:
     {
-        size_t i = 0;
-        for (auto it = op->d()->nnodes(); !it.done(); ++i, ++it) {
-            auto d = *it;
+        for (size_t i = 0; i < op->d()->nnode_count(); ++i) {
+            auto d = op->d()->nnode(i);
 
             std::vector<std::shared_ptr<narrow_node>> svec;
-            for (auto it = op->sources(); !it.done(); ++it) {
-                auto s = *it;
-
+            for (const auto s: op->sources()) {
                 /* This makes MUX work: the idea is that if the width
                  * is 1 (like MUX's select signal is) then we'll
                  * always pick the first node.  Note that this is

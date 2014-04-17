@@ -33,22 +33,6 @@ class narrow_node;
 class narrow_node: public libflo::node {
     friend class libflo::node;
 
-public:
-    class snode_viter {
-    private:
-        const typename std::vector<std::shared_ptr<shallow_node>> _nodes;
-        typename std::vector<std::shared_ptr<shallow_node>>::const_iterator _it;
-    public:
-        snode_viter(const std::vector<std::shared_ptr<shallow_node>>& nodes)
-            : _nodes(nodes),
-              _it(_nodes.begin())
-            {
-            }
-        std::shared_ptr<shallow_node> operator*(void) const { return *_it; }
-        bool done(void) const { return _it == _nodes.end(); }
-        void operator++(void) { ++_it; }
-    };
-
 private:
     /* Stores the set of shallow words that coorespond to this narrow
      * word. */
@@ -75,7 +59,7 @@ public:
     /* Returns an iterator that walks through the list of shallow nodes
      * that would need to be created in order to implement this node
      * on a shallow machine. */
-    snode_viter snodes(void);
+    std::vector<std::shared_ptr<shallow_node>> snodes(void);
     std::shared_ptr<shallow_node> snode(size_t i);
     size_t snode_count(void);
 

@@ -68,7 +68,7 @@ narrow_node::narrow_node(const std::string name,
     }
 }
 
-narrow_node::snode_viter narrow_node::snodes(void)
+std::vector<std::shared_ptr<shallow_node>> narrow_node::snodes(void)
 {
     if (_sns_valid == false) {
         auto to_add = map_shallow(name(),
@@ -76,7 +76,7 @@ narrow_node::snode_viter narrow_node::snodes(void)
                                   depth_u(),
                                   is_mem(),
                                   is_const(),
-                                  cycle_u()
+                                  dfdepth_u()
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)
@@ -85,7 +85,7 @@ narrow_node::snode_viter narrow_node::snodes(void)
         _sns_valid = true;
     }
 
-    return snode_viter(_sns);
+    return _sns;
 }
 
 std::shared_ptr<shallow_node> narrow_node::snode(size_t i)
@@ -96,7 +96,7 @@ std::shared_ptr<shallow_node> narrow_node::snode(size_t i)
                                   depth_u(),
                                   is_mem(),
                                   is_const(),
-                                  cycle_u()
+                                  dfdepth_u()
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)
@@ -116,7 +116,7 @@ size_t narrow_node::snode_count(void)
                                   depth_u(),
                                   is_mem(),
                                   is_const(),
-                                  cycle_u()
+                                  dfdepth_u()
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)
@@ -136,7 +136,7 @@ narrow_node::clone_from(std::shared_ptr<wide_node> w)
                                                         w->depth_u(),
                                                         w->is_mem(),
                                                         w->is_const(),
-                                                        w->cycle_u()));
+                                                        w->dfdepth_u()));
 }
 
 std::shared_ptr<narrow_node>
@@ -147,7 +147,7 @@ narrow_node::clone_from(std::shared_ptr<wide_node> w, bool force)
                                                         w->depth_u(),
                                                         w->is_mem(),
                                                         w->is_const(),
-                                                        w->cycle_u(),
+                                                        w->dfdepth_u(),
                                                         force));
 }
 
@@ -164,7 +164,7 @@ narrow_node::create_temp(const std::shared_ptr<narrow_node> t)
                                                         t->depth_u(),
                                                         t->is_mem(),
                                                         t->is_const(),
-                                                        t->cycle_u()
+                                                        t->dfdepth_u()
                                             ));
 }
 
@@ -197,7 +197,7 @@ narrow_node::create_const(const std::shared_ptr<narrow_node> t, size_t value)
                                                         t->depth_u(),
                                                         t->is_mem(),
                                                         t->is_const(),
-                                                        t->cycle_u()
+                                                        t->dfdepth_u()
                                             ));
 }
 
