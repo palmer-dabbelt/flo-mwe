@@ -219,7 +219,7 @@ out_t split_mem(const std::shared_ptr<libflo::operation<narrow_node>> op,
         auto addr_loc = shallow_node::create_const(op->s()->snode(0), addr_lo);
 
         if (addr_hi >= op->s()->snode_count()) {
-            fprintf(stderr, "INIT shallow %lu on %s\n",
+            fprintf(stderr, "INIT shallow " SIZET_FORMAT " on %s\n",
                     addr_hi,
                     op->s()->name().c_str()
                 );
