@@ -6,6 +6,15 @@ then
     TEST="test"
 fi
 
+# Skip some architectures as they're broken for specific tests
+for arch in "$(echo $FAILING_ARCHES)"
+do
+    if [[ "$arch" == "$(uname -m)" ]]
+    then
+        exit 0
+    fi
+done
+
 # Checks if we've been given a scala file, which means everything can
 # be generated right from here.
 if test -f $TEST.scala

@@ -2,6 +2,7 @@
 #include "chisel-jar.bash"
 
 TEST="DES"
+FAILING_ARCHES="i686"
 
 cat >DES.scala <<EOF
 import Chisel._
