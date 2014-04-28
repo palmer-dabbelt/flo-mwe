@@ -27,12 +27,14 @@
 #endif
 
 shallow_node::shallow_node(const std::string name,
-                         const libflo::unknown<size_t>& width,
-                         const libflo::unknown<size_t>& depth,
-                         bool is_mem,
-                         bool is_const,
-                         libflo::unknown<size_t> cycle)
-    : libflo::node(name, width, depth, is_mem, is_const, cycle)
+                           const libflo::unknown<size_t>& width,
+                           const libflo::unknown<size_t>& depth,
+                           bool is_mem,
+                           bool is_const,
+                           libflo::unknown<size_t> cycle,
+                           const libflo::unknown<size_t>& x,
+                           const libflo::unknown<size_t>& y)
+: libflo::node(name, width, depth, is_mem, is_const, cycle, x, y)
 {
     if (this->depth() > wide_node::get_mem_depth()) {
         fprintf(stderr, "Attempted to build a shallow that's too deep\n");
@@ -48,7 +50,9 @@ shallow_node::clone_from(std::shared_ptr<narrow_node> w)
                                                           w->depth_u(),
                                                           w->is_mem(),
                                                           w->is_const(),
-                                                          w->dfdepth_u()));
+                                                          w->dfdepth_u(),
+                                                          w->x_u(),
+                                                          w->y_u()));
 }
 
 
@@ -66,7 +70,9 @@ shallow_node::create_temp(const std::shared_ptr<shallow_node> t)
                                                           t->depth_u(),
                                                           t->is_mem(),
                                                           t->is_const(),
-                                                          t->dfdepth_u()
+                                                          t->dfdepth_u(),
+                                                          t->x_u(),
+                                                          t->y_u()
                                              ));
 
 }
@@ -81,11 +87,13 @@ shallow_node::create_temp(const size_t width)
 
     return std::shared_ptr<shallow_node>(
         new shallow_node(name,
-                        width,
-                        0,
-                        false,
-                        false,
-                        libflo::unknown<size_t>()
+                         width,
+                         0,
+                         false,
+                         false,
+                         libflo::unknown<size_t>(),
+                         libflo::unknown<size_t>(),
+                         libflo::unknown<size_t>()
             ));
 }
 
@@ -100,7 +108,9 @@ shallow_node::create_const(const std::shared_ptr<shallow_node> t, size_t value)
                                                           0,
                                                           false,
                                                           true,
-                                                          0
+                                                          0,
+                                                          libflo::unknown<size_t>(),
+                                                          libflo::unknown<size_t>()
                                              ));
 }
 
@@ -115,6 +125,8 @@ shallow_node::create_const(size_t width, size_t value)
                                                           0,
                                                           false,
                                                           true,
-                                                          0
+                                                          0,
+                                                          libflo::unknown<size_t>(),
+                                                          libflo::unknown<size_t>()
                                              ));
 }

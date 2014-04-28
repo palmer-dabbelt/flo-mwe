@@ -45,7 +45,9 @@ public:
                 const libflo::unknown<size_t>& depth,
                 bool is_mem,
                 bool is_const,
-                libflo::unknown<size_t> cycle);
+                libflo::unknown<size_t> cycle,
+                const libflo::unknown<size_t>& x,
+                const libflo::unknown<size_t>& y);
 
     narrow_node(const std::string name,
                 const libflo::unknown<size_t>& width,
@@ -53,6 +55,8 @@ public:
                 bool is_mem,
                 bool is_const,
                 libflo::unknown<size_t> cycle,
+                const libflo::unknown<size_t>& x,
+                const libflo::unknown<size_t>& y,
                 bool is_catd);
 
 public:

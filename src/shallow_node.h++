@@ -39,7 +39,9 @@ public:
                  const libflo::unknown<size_t>& depth,
                  bool is_mem,
                  bool is_const,
-                 libflo::unknown<size_t> cycle);
+                 libflo::unknown<size_t> cycle,
+                 const libflo::unknown<size_t>& x,
+                 const libflo::unknown<size_t>& y);
 
 public:
     /* Clones a narrow node into a shallow node. */

@@ -59,7 +59,9 @@ private:
               const libflo::unknown<size_t>& depth,
               bool is_mem,
               bool is_const,
-              libflo::unknown<size_t> cycle);
+              libflo::unknown<size_t> cycle,
+              const libflo::unknown<size_t>& x,
+              const libflo::unknown<size_t>& y);
 
 public:
     /* Returns an iterator that walks through the list of narrow nodes
