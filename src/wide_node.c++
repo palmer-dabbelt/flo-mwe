@@ -40,8 +40,7 @@ map_narrow(const std::string name,
            bool is_mem,
            bool is_const,
            libflo::unknown<size_t> cycle,
-           const libflo::unknown<size_t>& x,
-           const libflo::unknown<size_t>& y);
+           const libflo::unknown<std::string>& posn);
 
 static std::vector<std::shared_ptr<narrow_node>>
 map_catd(const std::string name,
@@ -50,8 +49,7 @@ map_catd(const std::string name,
          bool is_mem,
          bool is_const,
          libflo::unknown<size_t> cycle,
-         const libflo::unknown<size_t>& x,
-         const libflo::unknown<size_t>& y);
+         const libflo::unknown<std::string>& posn);
 
 wide_node::wide_node(const std::string name,
                      const libflo::unknown<size_t>& width,
@@ -59,9 +57,8 @@ wide_node::wide_node(const std::string name,
                      bool is_mem,
                      bool is_const,
                      libflo::unknown<size_t> cycle,
-                     const libflo::unknown<size_t>& x,
-                     const libflo::unknown<size_t>& y)
-    : libflo::node(name, width, depth, is_mem, is_const, cycle, x, y),
+                     const libflo::unknown<std::string>& posn)
+    : libflo::node(name, width, depth, is_mem, is_const, cycle, posn),
       _nns(),
       _nns_valid(false),
       _cdn(),
@@ -78,8 +75,7 @@ std::vector<std::shared_ptr<narrow_node>> wide_node::nnodes(void)
                                  is_mem(),
                                  is_const(),
                                  dfdepth_u(),
-                                 x_u(),
-                                 y_u()
+                                 posn_u()
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)
@@ -100,8 +96,7 @@ std::shared_ptr<narrow_node> wide_node::nnode(size_t i)
                                  is_mem(),
                                  is_const(),
                                  dfdepth_u(),
-                                 x_u(),
-                                 y_u()
+                                 posn_u()
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)
@@ -122,8 +117,7 @@ std::shared_ptr<narrow_node> wide_node::catdnode(size_t i)
                                is_mem(),
                                is_const(),
                                dfdepth_u(),
-                               x_u(),
-                               y_u()
+                               posn_u()
             );
 
         for (auto it = to_add.begin(); it != to_add.end(); ++it)
@@ -184,8 +178,7 @@ map_narrow(const std::string name,
            bool is_mem,
            bool is_const,
            libflo::unknown<size_t> cycle,
-           const libflo::unknown<size_t>& x,
-           const libflo::unknown<size_t>& y)
+           const libflo::unknown<std::string>& posn)
 {
     std::vector<std::shared_ptr<narrow_node>> out;
 
@@ -224,7 +217,7 @@ map_narrow(const std::string name,
         else if (i > 0)
             w = ((width.value() - 1) % wide_node::get_word_length()) + 1;
 
-        auto p = new narrow_node(n, w, depth, is_mem, is_const, cycle, x, y);
+        auto p = new narrow_node(n, w, depth, is_mem, is_const, cycle, posn);
         out.push_back(std::shared_ptr<narrow_node>(p));
     }
 
@@ -238,8 +231,7 @@ map_catd(const std::string name,
          bool is_mem,
          bool is_const,
          libflo::unknown<size_t> cycle,
-         const libflo::unknown<size_t>& x,
-         const libflo::unknown<size_t>& y)
+         const libflo::unknown<std::string>& posn)
 {
     std::vector<std::shared_ptr<narrow_node>> out;
 
@@ -278,7 +270,7 @@ map_catd(const std::string name,
         else if (i > 0)
             w = width.value();
 
-        auto p = new narrow_node(n, w, depth, is_mem, is_const, cycle, x, y, true);
+        auto p = new narrow_node(n, w, depth, is_mem, is_const, cycle, posn, true);
         out.push_back(std::shared_ptr<narrow_node>(p));
     }
 

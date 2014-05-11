@@ -53,15 +53,14 @@ private:
     std::vector<std::shared_ptr<narrow_node>> _cdn;
     bool _cdn_valid;
 
-private:
+public:
     wide_node(const std::string name,
               const libflo::unknown<size_t>& width,
               const libflo::unknown<size_t>& depth,
               bool is_mem,
               bool is_const,
               libflo::unknown<size_t> cycle,
-              const libflo::unknown<size_t>& x,
-              const libflo::unknown<size_t>& y);
+              const libflo::unknown<std::string>& );
 
 public:
     /* Returns an iterator that walks through the list of narrow nodes

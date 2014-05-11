@@ -40,8 +40,7 @@ public:
                  bool is_mem,
                  bool is_const,
                  libflo::unknown<size_t> cycle,
-                 const libflo::unknown<size_t>& x,
-                 const libflo::unknown<size_t>& y);
+                 const libflo::unknown<std::string>& posn);
 
 public:
     /* Clones a narrow node into a shallow node. */
