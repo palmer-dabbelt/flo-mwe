@@ -87,27 +87,6 @@ std::vector<std::shared_ptr<narrow_node>> wide_node::nnodes(void)
     return _nns;
 }
 
-std::shared_ptr<narrow_node> wide_node::nnode(size_t i)
-{
-    if (_nns_valid == false) {
-        auto to_add = map_narrow(name(),
-                                 width_u(),
-                                 depth_u(),
-                                 is_mem(),
-                                 is_const(),
-                                 dfdepth_u(),
-                                 posn_u()
-            );
-
-        for (auto it = to_add.begin(); it != to_add.end(); ++it)
-            _nns.push_back(*it);
-
-        _nns_valid = true;
-    }
-
-    return _nns[i];
-}
-
 std::shared_ptr<narrow_node> wide_node::catdnode(size_t i)
 {
     if (_cdn_valid == false) {
@@ -181,12 +160,12 @@ wide_node::create_temp(const size_t width)
 
     return std::shared_ptr<wide_node>(
         new wide_node(name,
-                        width,
-                        0,
-                        false,
-                        false,
-                        libflo::unknown<size_t>(),
-                        libflo::unknown<std::string>()
+                      width,
+                      0,
+                      false,
+                      false,
+                      libflo::unknown<size_t>(),
+                      libflo::unknown<std::string>()
             ));
 }
 
