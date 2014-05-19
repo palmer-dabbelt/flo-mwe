@@ -171,6 +171,70 @@ size_t wide_node::get_mem_depth(void)
     return _mem_depth;
 }
 
+std::shared_ptr<wide_node>
+wide_node::create_temp(const size_t width)
+{
+    static unsigned long num = 0;
+
+    char name[LINE_MAX];
+    snprintf(name, LINE_MAX, "MWEwW%lu", num++);
+
+    return std::shared_ptr<wide_node>(
+        new wide_node(name,
+                        width,
+                        0,
+                        false,
+                        false,
+                        libflo::unknown<size_t>(),
+                        libflo::unknown<std::string>()
+            ));
+}
+
+std::shared_ptr<wide_node>
+wide_node::create_const(const std::shared_ptr<wide_node> t, size_t value)
+{
+    char name[LINE_MAX];
+    snprintf(name, LINE_MAX, SIZET_FORMAT, value);
+
+    return std::shared_ptr<wide_node>(new wide_node(name,
+                                                    t->width_u(),
+                                                    t->depth_u(),
+                                                    false,
+                                                    true,
+                                                    0,
+                                                    t->posn_u()
+                                          ));
+}
+
+std::shared_ptr<wide_node>
+wide_node::create_const(size_t width, size_t value)
+{
+    char name[LINE_MAX];
+    snprintf(name, LINE_MAX, SIZET_FORMAT, value);
+
+    return std::shared_ptr<wide_node>(new wide_node(name,
+                                                    width,
+                                                    0,
+                                                    false,
+                                                    true,
+                                                    libflo::unknown<size_t>(),
+                                                    libflo::unknown<std::string>()
+                                          ));
+}
+
+std::shared_ptr<wide_node>
+wide_node::clone_from(std::shared_ptr<narrow_node> n)
+{
+    return std::shared_ptr<wide_node>(new wide_node(n->name(),
+                                                    n->width_u(),
+                                                    n->depth_u(),
+                                                    n->is_mem(),
+                                                    n->is_const(),
+                                                    n->dfdepth_u(),
+                                                    n->posn_u()
+                                            ));
+}
+
 std::vector<std::shared_ptr<narrow_node>>
 map_narrow(const std::string name,
            const libflo::unknown<size_t>& width,
