@@ -1,0 +1,8 @@
+flo-mwe: A Flo file multi-word expander
+
+flo-mwe: --width <w> --depth <d> --input <i> --output <o>
+  Replaces multi-word operations with multiple
+  single-word operations in a Flo file.
+  
+  --input sets the input filename
+  --output sets the output length
