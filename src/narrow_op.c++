@@ -782,6 +782,24 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         break;
     }
 
+        /* Negation is really just subtraction... */
+    case libflo::opcode::NEG:
+    {
+        auto zero = wide_node::create_const(op->s()->width(), 0);
+        auto d = op->d();
+        auto sub_op = libflo::operation<wide_node>::create(
+            d,
+            d->width(),
+            libflo::opcode::SUB,
+            {zero, op->s()}
+            );
+
+        for (const auto& op: narrow_op(sub_op, width, false))
+            out.push_back(op);
+
+        break;
+    }
+
         /* Some operations are fundamentally unsplitable. */
     case libflo::opcode::CATD:
     case libflo::opcode::RSHD:
@@ -801,7 +819,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::LT:
     case libflo::opcode::MEM:
     case libflo::opcode::MSK:
-    case libflo::opcode::NEG:
     case libflo::opcode::NEQ:
     case libflo::opcode::NOP:
     case libflo::opcode::RD:
