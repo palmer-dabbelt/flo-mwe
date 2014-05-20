@@ -33,6 +33,7 @@ TESTSRC     += counter-250-down.bash
 TESTSRC     += counter-250-shift.bash
 TESTSRC     += counter-250-cat.bash
 TESTSRC     += counter-256.bash
+TESTSRC     += mul-48.bash
 
 TESTSRC     += many_shift-64-1.bash
 TESTSRC     += many_shift-48-6.bash

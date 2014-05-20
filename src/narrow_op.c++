@@ -27,14 +27,12 @@ typedef std::vector<std::shared_ptr<libflo::operation<narrow_node>>> out_t;
  * that contains the given bit field.  This will output any necessary
  * operations out to the output field.  One of these takes a named
  * output node, the other generates one. */
-#if 0
-static __inline__
+static
 std::shared_ptr<narrow_node> bfext(out_t& out,
                                    size_t width,
                                    const std::shared_ptr<wide_node>& w,
                                    size_t offset,
                                    size_t count);
-#endif
 static void bfext(std::shared_ptr<narrow_node>& n,
                   out_t& out,
                   size_t width,
@@ -661,6 +659,129 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         }
         break;
 
+        /* Multiplication has more custom splitting rules. */
+    case libflo::opcode::MUL:
+    {
+        if (op->s()->width() != op->t()->width()) {
+            fprintf(stderr, "Multiplication with different operand widths\n");
+            abort();
+        }
+
+        if (op->s()->nnode_count() != 1) {
+            fprintf(stderr, "Multiplication with more than one word\n");
+            abort();
+        }
+
+        auto full_width = op->s()->width();
+        auto half_width = op->s()->width() / 2;
+
+        /* We need to split the inputs up into half-width operations,
+         * as that's the only way to do a full-precision multiply. */
+        auto sl = bfext(out, full_width, op->s(), 0, half_width);
+        auto sh = bfext(out, full_width, op->s(), half_width, half_width);
+        auto tl = bfext(out, full_width, op->t(), 0, half_width);
+        auto th = bfext(out, full_width, op->t(), half_width, half_width);
+
+        /* Now that we've got these half-words, we need to multiply
+         * them all together.  These are guarnteed to be narrow
+         * operations because they're at most half width. */
+        auto mul = [&](std::shared_ptr<narrow_node>& a,
+                       std::shared_ptr<narrow_node>& b)
+            -> std::shared_ptr<narrow_node>
+            {
+                auto p = narrow_node::create_temp(full_width);
+                auto p_op = libflo::operation<narrow_node>::create(
+                    p,
+                    full_width,
+                    libflo::opcode::MUL,
+                    {a, b}
+                    );
+                out.push_back(p_op);
+                return p;
+            };
+        auto sltl = mul(sl, tl);
+        auto shtl = mul(sh, tl);
+        auto slth = mul(sl, th);
+        auto shth = mul(sh, th);
+
+        /* At this point we're going to start generating some wide
+         * operations, which will then get passed back through the
+         * multi-word expander. */
+        auto wide_ops =
+            std::vector<std::shared_ptr<libflo::operation<wide_node>>>();
+
+        /* Expands the given node such that it will fill the full
+         * output width.  This pads the MSB with zeros and the LSB
+         * with zeros, for the length of that offset. */
+        auto expand = [&](std::shared_ptr<narrow_node>& n,
+                          size_t offset)
+            -> std::shared_ptr<wide_node>
+            {
+                auto nw = wide_node::clone_from(n);
+
+                auto zero = wide_node::create_const(nw, offset);
+
+                auto nwo = wide_node::create_temp(nw->width() * 2);
+                auto nwo_op = libflo::operation<wide_node>::create(
+                    nwo,
+                    nwo->width(),
+                    (offset == 0) ? libflo::opcode::RSH : libflo::opcode::LSH,
+                    {nw, zero}
+                    );
+                wide_ops.push_back(nwo_op);
+
+                return nwo;
+            };
+        auto sltle = expand(sltl, 0*half_width);
+        auto shtle = expand(shtl, 1*half_width);
+        auto slthe = expand(slth, 1*half_width);
+        auto shshe = expand(shth, 2*half_width);
+
+        /* At this point we just need to sum up every word. */
+        auto sum = [&](std::vector<std::shared_ptr<wide_node>> values)
+            -> std::shared_ptr<wide_node>
+            {
+                std::shared_ptr<wide_node> s = NULL;
+
+                for (auto& value: values) {
+                    if (s == NULL) {
+                        s = value;
+                    } else {
+                        auto ns = wide_node::create_temp(s);
+                        auto ns_op = libflo::operation<wide_node>::create(
+                            ns,
+                            ns->width(),
+                            libflo::opcode::ADD,
+                            {s, value}
+                            );
+                        wide_ops.push_back(ns_op);
+                        s = ns;
+                    }
+                }
+
+                return s;
+            };
+        auto total = sum({sltle, shtle, slthe, shshe});
+
+        std::shared_ptr<wide_node> d = op->d();
+        auto mov_op = libflo::operation<wide_node>::create(
+            d,
+            d->width(),
+            libflo::opcode::MOV,
+            {total}
+            );
+        wide_ops.push_back(mov_op);
+
+        /* Pass every wide op we generated through the multi-word
+         * expander to produce more operations! */
+        for (const auto& wide_op: wide_ops) {
+            for (const auto& op: narrow_op(wide_op, width, false))
+                out.push_back(op);
+        }
+
+        break;
+    }
+
         /* Some operations are fundamentally unsplitable. */
     case libflo::opcode::CATD:
     case libflo::opcode::RSHD:
@@ -680,7 +801,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::LT:
     case libflo::opcode::MEM:
     case libflo::opcode::MSK:
-    case libflo::opcode::MUL:
     case libflo::opcode::NEG:
     case libflo::opcode::NEQ:
     case libflo::opcode::NOP:
@@ -750,7 +870,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     return out;
 }
 
-#if 0
 std::shared_ptr<narrow_node> bfext(out_t& out,
                                    size_t width,
                                    const std::shared_ptr<wide_node>& w,
@@ -761,7 +880,6 @@ std::shared_ptr<narrow_node> bfext(out_t& out,
     bfext(n, out, width, w, offset, count);
     return n;
 }
-#endif
 
 void bfext(std::shared_ptr<narrow_node>& n,
            out_t& out,
