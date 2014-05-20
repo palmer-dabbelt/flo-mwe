@@ -180,8 +180,8 @@ wide_node::create_temp(const std::shared_ptr<wide_node> t)
     return std::shared_ptr<wide_node>(new wide_node(name,
                                                     t->width_u(),
                                                     t->depth_u(),
-                                                    t->is_mem(),
-                                                    t->is_const(),
+                                                    false,
+                                                    false,
                                                     t->dfdepth_u(),
                                                     t->posn_u()
                                           ));
