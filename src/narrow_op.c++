@@ -649,11 +649,12 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                 out.push_back(lo_op);
             } else {
                 auto d = op->d()->nnode(1);
+                auto rsh_w = 0 - hi_width;
                 auto mov_op = libflo::operation<narrow_node>::create(
                     d,
                     d->width(),
-                    libflo::opcode::MOV,
-                    {narrow_node::create_const(d, 0)}
+                    libflo::opcode::RSH,
+                    {op->s()->nnode(0), narrow_node::create_const(d, rsh_w)}
                     );
                 out.push_back(mov_op);
             }
