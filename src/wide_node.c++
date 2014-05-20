@@ -170,6 +170,24 @@ wide_node::create_temp(const size_t width)
 }
 
 std::shared_ptr<wide_node>
+wide_node::create_temp(const std::shared_ptr<wide_node> t)
+{
+    static unsigned long num = 0;
+
+    char name[LINE_MAX];
+    snprintf(name, LINE_MAX, "MWEwT%lu", num++);
+
+    return std::shared_ptr<wide_node>(new wide_node(name,
+                                                    t->width_u(),
+                                                    t->depth_u(),
+                                                    t->is_mem(),
+                                                    t->is_const(),
+                                                    t->dfdepth_u(),
+                                                    t->posn_u()
+                                          ));
+}
+
+std::shared_ptr<wide_node>
 wide_node::create_const(const std::shared_ptr<wide_node> t, size_t value)
 {
     char name[LINE_MAX];
