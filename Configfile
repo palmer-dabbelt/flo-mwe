@@ -58,6 +58,7 @@ TESTSRC     += des-ufeistel.bash
 TESTSRC     += des-feistel.bash
 TESTSRC     += des-noshuffle.bash
 TESTSRC     += des-noshuffle-narrow.bash
+TESTSRC     += mimo.bash
 
 # This binary expands multi-word Flo operations without generating the
 # mapping info.

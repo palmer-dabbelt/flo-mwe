@@ -21,16 +21,16 @@ if test -f $TEST.scala
 then
     cat $TEST.scala
 
-    scalac $TEST.scala -classpath chisel.jar:.
+    scalac *.scala -classpath chisel.jar:.
 
-    scala -classpath chisel.jar:. $TEST \
+    scala -classpath chisel.jar:. $TEST $ARGS \
         --debug --backend flo \
         || true
 
     touch $TEST.stdin
     while [[ "$(tail -n1 $TEST.stdin)" != "quit" ]]
     do
-        scala -classpath chisel.jar:. $TEST \
+        scala -classpath chisel.jar:. $TEST $ARGS \
             --debug --genHarness --compile --test --backend c \
             --vcd --dumpTestInput --testerSeed 0
     done
