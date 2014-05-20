@@ -572,8 +572,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         /* Left-shift has pretty much the same limitations as
          * right-shift does. */
     case libflo::opcode::LSH:
-        fprintf(stderr, "emit_lsh: '%s'\n", op->to_string().c_str());
-
         /* We only support constant-offset shifts. */
         if (op->t()->is_const() == false) {
             fprintf(stderr, "Only constant-offset shifts are supported\n");
