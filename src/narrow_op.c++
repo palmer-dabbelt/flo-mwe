@@ -569,6 +569,99 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         break;
     }
 
+        /* Left-shift has pretty much the same limitations as
+         * right-shift does. */
+    case libflo::opcode::LSH:
+        fprintf(stderr, "emit_lsh: '%s'\n", op->to_string().c_str());
+
+        /* We only support constant-offset shifts. */
+        if (op->t()->is_const() == false) {
+            fprintf(stderr, "Only constant-offset shifts are supported\n");
+            abort();
+        } else {
+            if (op->d()->nnode_count() != 2) {
+                fprintf(stderr, "Only two-word left shifts are supported\n");
+                abort();
+            }
+
+            size_t offset = op->t()->const_int();
+            if (offset > width) {
+                fprintf(stderr, "Left shifts can't skip a word\n");
+                abort();
+            }
+
+            auto offset_n = narrow_node::create_const(offset);
+            auto width_m_offset = op->d()->nnode(0)->width() - offset;
+            auto width_m_offset_n = narrow_node::create_const(width_m_offset);
+
+            ssize_t hi_width = op->d()->nnode(1)->width() - offset;
+
+            /* First handle the low word, it's easy because all we
+             * have to do is zero fill it. */
+            {
+                auto d = op->d()->nnode(0);
+
+                auto lo_op = libflo::operation<narrow_node>::create(
+                    d,
+                    d->width(),
+                    libflo::opcode::LSH,
+                    {op->s()->nnode(0), offset_n}
+                    );
+                out.push_back(lo_op);
+            }
+
+            /* Now handle the high word, which is a touch harder
+             * because it requires information from two sources to be
+             * concatonated together. */
+            if ((hi_width > 0) && (op->s()->nnode_count() == 2)) {
+                auto lo = narrow_node::create_temp(offset);
+                auto lo_op = libflo::operation<narrow_node>::create(
+                    lo,
+                    lo->width(),
+                    libflo::opcode::RSH,
+                    {op->s()->nnode(0), width_m_offset_n}
+                    );
+                out.push_back(lo_op);
+
+                auto hi = narrow_node::create_temp(hi_width);
+                auto hi_op = libflo::operation<narrow_node>::create(
+                    hi,
+                    hi_width,
+                    libflo::opcode::RSH,
+                    {op->s()->nnode(1), narrow_node::create_const(0)}
+                    );
+                out.push_back(hi_op);
+
+                auto d = op->d()->nnode(1);
+                auto cat_op = libflo::operation<narrow_node>::create(
+                    d,
+                    d->width(),
+                    libflo::opcode::CAT,
+                    {hi, lo}
+                    );
+                out.push_back(cat_op);
+            } else if ((hi_width > 0) && (op->s()->nnode_count() == 1)) {
+                auto d = op->d()->nnode(1);
+                auto lo_op = libflo::operation<narrow_node>::create(
+                    d,
+                    d->width(),
+                    libflo::opcode::RSH,
+                    {op->s()->nnode(0), width_m_offset_n}
+                    );
+                out.push_back(lo_op);
+            } else {
+                auto d = op->d()->nnode(1);
+                auto mov_op = libflo::operation<narrow_node>::create(
+                    d,
+                    d->width(),
+                    libflo::opcode::MOV,
+                    {narrow_node::create_const(d, 0)}
+                    );
+                out.push_back(mov_op);
+            }
+        }
+        break;
+
         /* Some operations are fundamentally unsplitable. */
     case libflo::opcode::CATD:
     case libflo::opcode::RSHD:
@@ -576,7 +669,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         op->writeln_debug(stderr);
         abort();
         break;
-
 
     case libflo::opcode::ARSH:
     case libflo::opcode::EAT:
@@ -586,7 +678,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::LD:
     case libflo::opcode::LIT:
     case libflo::opcode::LOG2:
-    case libflo::opcode::LSH:
     case libflo::opcode::LT:
     case libflo::opcode::MEM:
     case libflo::opcode::MSK:
