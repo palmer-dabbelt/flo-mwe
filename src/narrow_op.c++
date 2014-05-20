@@ -43,7 +43,7 @@ static void bfext(std::shared_ptr<narrow_node>& n,
                   size_t count);
 
 out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
-                size_t width)
+                size_t width, bool emit_catd)
 {
     /* Check to see if this operation just fits within a machine word,
      * in which case we don't really have to do anything. */
@@ -613,6 +613,10 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
 
     /* IN nodes aren't handled with a CATD at all. */
     if (op->op() == libflo::opcode::IN)
+        return out;
+
+    /* If we've been asked not to emit CATD nodes then don't do so. */
+    if (emit_catd == false)
         return out;
 
     /* We now need to CATD together a bunch of nodes such that they

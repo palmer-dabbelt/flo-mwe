@@ -29,6 +29,6 @@
 
 std::vector<std::shared_ptr<libflo::operation<narrow_node>>>
 narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
-          size_t width);
+          size_t width, bool emit_catd = true);
 
 #endif
