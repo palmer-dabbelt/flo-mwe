@@ -304,10 +304,10 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
 
                 /* This is true IFF the current operation ends up
                  * producing a carry. */
-                auto carry_here = narrow_node::create_temp(d);
+                auto carry_here = narrow_node::create_temp(1);
                 auto carry_here_op = libflo::operation<narrow_node>::create(
                     carry_here,
-                    carry_here->width_u(),
+                    s->width_u(),
                     libflo::opcode::LT,
                     {s, t}
                     );
@@ -327,10 +327,10 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                  * propogate the carry bit along. */
 
                 /* First the equality test. */
-                auto is_zero = narrow_node::create_temp(d);
+                auto is_zero = narrow_node::create_temp(1);
                 auto is_zero_op = libflo::operation<narrow_node>::create(
                     is_zero,
-                    is_zero->width_u(),
+                    s->width_u(),
                     libflo::opcode::EQ,
                     {s, t}
                     );
