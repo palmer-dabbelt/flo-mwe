@@ -110,8 +110,12 @@ int main(int argc, const char **argv)
         auto n = narrow_op(op, arg_width);
         for (auto it = n.begin(); it != n.end(); ++it) {
             auto m = split_mem(*it, arg_depth);
-            for (auto it = m.begin(); it != m.end(); ++it)
+            for (auto it = m.begin(); it != m.end(); ++it) {
+#ifdef DEBUG_OPERATION_ADDING
+                (*it)->writeln(stderr);
+#endif
                 out_flo->add_op(*it);
+            }
         }
     }
 
