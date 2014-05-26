@@ -220,6 +220,22 @@ wide_node::create_const(size_t width, size_t value)
 }
 
 std::shared_ptr<wide_node>
+wide_node::create_const(size_t value)
+{
+    char name[LINE_MAX];
+    snprintf(name, LINE_MAX, SIZET_FORMAT, value);
+
+    return std::shared_ptr<wide_node>(new wide_node(name,
+                                                    libflo::unknown<size_t>(),
+                                                    0,
+                                                    false,
+                                                    true,
+                                                    libflo::unknown<size_t>(),
+                                                    libflo::unknown<std::string>()
+                                          ));
+}
+
+std::shared_ptr<wide_node>
 wide_node::clone_from(std::shared_ptr<narrow_node> n)
 {
     return std::shared_ptr<wide_node>(new wide_node(n->name(),

@@ -109,6 +109,9 @@ public:
     static std::shared_ptr<wide_node>
     create_const(size_t width, size_t value);
 
+    static std::shared_ptr<wide_node>
+    create_const(size_t value);
+
     /* Clones a narrow node into a wide node. */
     static std::shared_ptr<wide_node>
     clone_from(std::shared_ptr<narrow_node> n);
