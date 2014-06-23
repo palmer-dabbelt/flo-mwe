@@ -809,6 +809,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         break;
 
     case libflo::opcode::ARSH:
+    case libflo::opcode::DIV:
     case libflo::opcode::EAT:
     case libflo::opcode::EQ:
     case libflo::opcode::GTE:
