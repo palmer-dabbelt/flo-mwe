@@ -945,13 +945,116 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         break;
     }
 
+    case libflo::opcode::LOG2:
+    {
+        /* The log operation is another sort of reduction with a bunch
+         * of MUXes. */
+        /* FIXME: This won't work for nodes lager than 2^31... :). */
+        auto reduction = narrow_node::create_temp(width);
+        {
+            auto z = narrow_node::create_const(reduction, -1);
+            auto mov_op = libflo::operation<narrow_node>::create(
+                reduction,
+                reduction->width_u(),
+                libflo::opcode::MOV,
+                {z}
+                );
+            out.push_back(mov_op);
+        }
+
+        /* Here's the actual reduction code. */
+        for (size_t i = 0; i < op->s()->nnode_count(); ++i) {
+            auto s = op->s()->nnode(i);
+
+            auto cur = narrow_node::create_temp(reduction);
+            auto cur_op = libflo::operation<narrow_node>::create(
+                cur,
+                cur->width_u(),
+                libflo::opcode::LOG2,
+                {s}
+                );
+            out.push_back(cur_op);
+
+            auto offset = narrow_node::create_const(cur, i * width);
+            auto sum = narrow_node::create_temp(cur);
+            auto sum_op = libflo::operation<narrow_node>::create(
+                sum,
+                sum->width_u(),
+                libflo::opcode::ADD,
+                {cur, offset}
+                );
+            out.push_back(sum_op);
+
+            auto pass = narrow_node::create_temp(1);
+            auto zero = narrow_node::create_const(s, 0);
+            auto pass_op = libflo::operation<narrow_node>::create(
+                pass,
+                s->width_u(),
+                libflo::opcode::EQ,
+                {s, zero}
+                );
+            out.push_back(pass_op);
+
+            auto nred = narrow_node::create_temp(reduction);
+            auto mux_op = libflo::operation<narrow_node>::create(
+                nred,
+                nred->width_u(),
+                libflo::opcode::MUX,
+                {pass, reduction, sum}
+                );
+            out.push_back(mux_op);
+
+            reduction = nred;
+        }
+
+        /* Now we actually have to fill in the output node, which
+         * could be very wide.  Essentially this just requires a
+         * sign-extension of the one word that we've actually
+         * calculated as being useful. */
+        {
+            auto wmo = narrow_node::create_const(width - 1);
+            auto sign_bit = narrow_node::create_temp(1);
+            auto sign_bit_op = libflo::operation<narrow_node>::create(
+                sign_bit,
+                sign_bit->width_u(),
+                libflo::opcode::RSH,
+                {reduction, wmo}
+                );
+            out.push_back(sign_bit_op);
+
+            auto sign_word = narrow_node::create_temp(width);
+            auto zero = narrow_node::create_const(sign_word, 0);
+            auto sign_word_op = libflo::operation<narrow_node>::create(
+                sign_word,
+                sign_word->width_u(),
+                libflo::opcode::ARSH,
+                {sign_bit, zero}
+                );
+            out.push_back(sign_word_op);
+
+            for (size_t i = 0; i < op->d()->nnode_count(); ++i) {
+                auto d = op->d()->nnode(i);
+                auto s = (i == 0) ? reduction : sign_word;
+
+                auto mov_op = libflo::operation<narrow_node>::create(
+                    d,
+                    d->width_u(),
+                    libflo::opcode::RSH,
+                    {s, zero}
+                    );
+                out.push_back(mov_op);
+            }
+        }
+
+        break;
+    }
+
     case libflo::opcode::ARSH:
     case libflo::opcode::DIV:
     case libflo::opcode::EAT:
     case libflo::opcode::INIT:
     case libflo::opcode::LD:
     case libflo::opcode::LIT:
-    case libflo::opcode::LOG2:
     case libflo::opcode::MEM:
     case libflo::opcode::MSK:
     case libflo::opcode::NOP:
