@@ -1,5 +1,5 @@
 set -ex
 
-tempdir=`mktemp -d -t ptest-flo-llvm-c++.XXXXXXXXXX`
+tempdir=`mktemp -d -t ptest-flo-mwe.XXXXXXXXXX`
 trap "rm -rf $tempdir" EXIT
 cd $tempdir
