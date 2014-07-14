@@ -808,19 +808,152 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         abort();
         break;
 
+        /* Comparison operations need to be narrowed a bit differently
+         * than everything else does because they're actually a
+         * reduction not a mapping. */
+    case libflo::opcode::EQ:
+    case libflo::opcode::NEQ:
+    {
+        auto reduction = narrow_node::create_temp(op->d()->width());
+
+        /* Equality is simple: we need every word to be equal between
+         * the two nodes.  Thus we simply do an AND reduction here. */
+        {
+            auto defval = op->op() == libflo::opcode::EQ ? 1 : 0;
+            auto o = narrow_node::create_const(reduction, defval);
+            auto mov_op = libflo::operation<narrow_node>::create(
+                reduction,
+                reduction->width_u(),
+                libflo::opcode::MOV,
+                {o}
+                );
+            out.push_back(mov_op);
+        }
+
+        /* Now walk through and check every word for equality. */
+        for (size_t i = 0; i < op->s()->nnode_count(); ++i) {
+            auto s = op->s()->nnode(i);
+            auto t = op->t()->nnode(i);
+
+            auto cur = narrow_node::create_temp(reduction);
+            auto cur_op = libflo::operation<narrow_node>::create(
+                cur,
+                s->width_u(),
+                op->op(),
+                {s, t}
+                );
+            out.push_back(cur_op);
+
+            auto opcode = op->op() == libflo::opcode::EQ
+                ? libflo::opcode::AND : libflo::opcode::OR;
+            auto nred = narrow_node::create_temp(reduction);
+            auto and_op = libflo::operation<narrow_node>::create(
+                nred,
+                nred->width_u(),
+                opcode,
+                {reduction, cur}
+                );
+            out.push_back(and_op);
+
+            reduction = nred;
+        }
+
+        /* Finally go and overwrite the output node. */
+        {
+            auto d = op->d()->nnode(0);
+            auto mov_op = libflo::operation<narrow_node>::create(
+                d,
+                d->width_u(),
+                libflo::opcode::MOV,
+                {reduction}
+                );
+            out.push_back(mov_op);
+        }
+
+        break;
+    }
+
+    case libflo::opcode::GTE:
+    case libflo::opcode::LT:
+    {
+        auto reduction = narrow_node::create_temp(op->d()->width());
+
+        /* I guess this is some sort of reduction...  Just with a MUX
+         * instead of an AND/OR.  There's probably a word for
+         * it... :) */
+        {
+            auto defval = op->op() == libflo::opcode::GTE ? 1 : 0;
+            auto o = narrow_node::create_const(reduction, defval);
+            auto mov_op = libflo::operation<narrow_node>::create(
+                reduction,
+                reduction->width_u(),
+                libflo::opcode::MOV,
+                {o}
+                );
+            out.push_back(mov_op);
+        }
+
+        /* Here's the reduction.  Essentially we compute the value at
+         * every word and pass through the old value if the current
+         * words are equal. */
+        for (size_t i = 0; i < op->s()->nnode_count(); ++i) {
+            auto s = op->s()->nnode(i);
+            auto t = op->t()->nnode(i);
+
+            auto cur = narrow_node::create_temp(reduction);
+            auto cur_op = libflo::operation<narrow_node>::create(
+                cur,
+                s->width_u(),
+                op->op(),
+                {s, t}
+                );
+            out.push_back(cur_op);
+
+            auto pass = narrow_node::create_temp(reduction);
+            auto pass_op = libflo::operation<narrow_node>::create(
+                pass,
+                s->width_u(),
+                libflo::opcode::EQ,
+                {s, t}
+                );
+            out.push_back(pass_op);
+
+            auto nred = narrow_node::create_temp(reduction);
+            auto mux_op = libflo::operation<narrow_node>::create(
+                nred,
+                nred->width_u(),
+                libflo::opcode::MUX,
+                {pass, reduction, cur}
+                );
+            out.push_back(mux_op);
+
+            reduction = nred;
+        }
+
+        /* Finally go and overwrite the output node. */
+        {
+            auto d = op->d()->nnode(0);
+            auto mov_op = libflo::operation<narrow_node>::create(
+                d,
+                d->width_u(),
+                libflo::opcode::MOV,
+                {reduction}
+                );
+            out.push_back(mov_op);
+        }
+
+        break;
+    }
+
     case libflo::opcode::ARSH:
     case libflo::opcode::DIV:
     case libflo::opcode::EAT:
-    case libflo::opcode::EQ:
-    case libflo::opcode::GTE:
     case libflo::opcode::INIT:
     case libflo::opcode::LD:
     case libflo::opcode::LIT:
     case libflo::opcode::LOG2:
-    case libflo::opcode::LT:
     case libflo::opcode::MEM:
     case libflo::opcode::MSK:
-    case libflo::opcode::NEQ:
     case libflo::opcode::NOP:
     case libflo::opcode::RD:
     case libflo::opcode::RND:
