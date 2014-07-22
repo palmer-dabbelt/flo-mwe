@@ -407,75 +407,38 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
 
     case libflo::opcode::CAT:
     {
-        auto t_bit = op->t()->width();
+        auto offset = wide_node::create_const(op->d(), op->t()->width());
 
-        for (size_t i = 0; i < op->d()->nnode_count(); ++i) {
-            auto d = op->d()->nnode(i);
+        auto shifted = wide_node::create_temp(op->d());
+        auto shift_op = libflo::operation<wide_node>::create(
+            shifted,
+            shifted->width_u(),
+            libflo::opcode::LSH,
+            {op->s(), offset}
+            );
+        for (const auto& op: narrow_op(shift_op, width, false))
+            out.push_back(op);
 
-            auto lo_bit = (i + 0) * wide_node::get_word_length();
-            auto hi_bit = (i + 1) * wide_node::get_word_length();
-            if (hi_bit > op->d()->width())
-                hi_bit = op->d()->width();
+        auto extended = wide_node::create_temp(op->d());
+        auto zero = wide_node::create_const(op->d(), 0);
+        auto extend_op = libflo::operation<wide_node>::create(
+            extended,
+            extended->width_u(),
+            libflo::opcode::RSH,
+            {op->t(), zero}
+            );
+        for (const auto& op: narrow_op(extend_op, width, false))
+            out.push_back(op);
 
-            if ((lo_bit < t_bit) && (hi_bit <= t_bit)) {
-                /* The first part of a CAT can always be satisfied by
-                 * MOV operations.*/
-                auto mov_op = libflo::operation<narrow_node>::create(
-                    d,
-                    d->width_u(),
-                    libflo::opcode::MOV,
-                    {op->t()->nnode(i)}
-                    );
-                out.push_back(mov_op);
-            } else if ((lo_bit >= t_bit) && (hi_bit > t_bit)) {
-                bfext(d,
-                      out,
-                      width,
-                      op->s(),
-                      lo_bit - op->t()->width(),
-                      hi_bit - lo_bit
-                    );
-            } else {
-                /* This is the middle part of a CAT, which is the only
-                 * part that's taking data from both of the sources.
-                 * It's effectively the same as a RSH, but with the
-                 * extra wrinkle that neither of the widths are full
-                 * words. */
-                auto max_width = wide_node::get_word_length();
-                auto trunc_width = op->s()->width();
-                auto lo_width = op->t()->nnode(i)->width();
-                if (trunc_width + lo_width > max_width)
-                    trunc_width = max_width - lo_width;
-
-                auto trunc = narrow_node::create_temp(trunc_width);
-
-                if (op->s()->is_const()) {
-                    auto trunc_op = libflo::operation<narrow_node>::create(
-                        trunc,
-                        trunc->width(),
-                        libflo::opcode::OR,
-                        {op->s()->nnode(0), op->s()->nnode(0)}
-                        );
-                    out.push_back(trunc_op);
-                } else {
-                    auto trunc_op = libflo::operation<narrow_node>::create(
-                        trunc,
-                        trunc->width(),
-                        libflo::opcode::RSH,
-                        {op->s()->nnode(0), narrow_node::create_const(trunc, 0)}
-                        );
-                    out.push_back(trunc_op);
-                }
-
-                auto cat_op = libflo::operation<narrow_node>::create(
-                    d,
-                    op->t()->nnode(i)->width(),
-                    libflo::opcode::CAT,
-                    {trunc, op->t()->nnode(i)}
-                    );
-                out.push_back(cat_op);
-            }
-        }
+        auto d = op->d();
+        auto or_op = libflo::operation<wide_node>::create(
+            d,
+            d->width_u(),
+            libflo::opcode::OR,
+            {shifted, extended}
+            );
+        for (const auto& op: narrow_op(or_op, width, false))
+            out.push_back(op);
 
         break;
     }
