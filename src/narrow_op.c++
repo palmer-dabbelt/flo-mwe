@@ -31,13 +31,13 @@ static
 std::shared_ptr<narrow_node> bfext(out_t& out,
                                    size_t width,
                                    const std::shared_ptr<wide_node>& w,
-                                   size_t offset,
+                                   ssize_t offset,
                                    size_t count);
 static void bfext(std::shared_ptr<narrow_node>& n,
                   out_t& out,
                   size_t width,
                   const std::shared_ptr<wide_node>& w,
-                  size_t offset,
+                  ssize_t offset,
                   size_t count);
 
 out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
@@ -382,17 +382,24 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     }
 
         /* Shift operations */
+    case libflo::opcode::LSH:
     case libflo::opcode::RSH:
     {
-        auto wide_s = op->s();
-        auto offset = op->t()->const_int();
+        if (op->t()->is_const()) {
+            auto wide_s = op->s();
+            auto offset = op->t()->const_int();
 
-        /* We walk the list of output nodes to ensure that they all
-         * end up filled out at some point. */
-        for (size_t i = 0; i < op->d()->nnode_count(); ++i) {
-            auto d = op->d()->nnode(i);
+            /* We walk the list of output nodes to ensure that they
+             * all end up filled out at some point. */
+            for (size_t i = 0; i < op->d()->nnode_count(); ++i) {
+                auto d = op->d()->nnode(i);
+                auto noffset = (op->op() == libflo::opcode::LSH) 
+                    ? i * width - offset : i * width + offset;
 
-            bfext(d, out, width, wide_s, offset + i * width, d->width());
+                bfext(d, out, width, wide_s, noffset, d->width());
+            }
+        } else {
+            fprintf(stderr, "op: '%s'\n", op->to_string().c_str());
         }
 
         break;
@@ -472,98 +479,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
 
         break;
     }
-
-        /* Left-shift has pretty much the same limitations as
-         * right-shift does. */
-    case libflo::opcode::LSH:
-        /* We only support constant-offset shifts. */
-        if (op->t()->is_const() == false) {
-            fprintf(stderr, "Only constant-offset shifts are supported\n");
-            abort();
-        } else {
-            if (op->d()->nnode_count() != 2) {
-                fprintf(stderr, "Only two-word left shifts are supported\n");
-                abort();
-            }
-
-            size_t offset = op->t()->const_int();
-            if (offset > width) {
-                fprintf(stderr, "Left shifts can't skip a word\n");
-                abort();
-            }
-
-            auto offset_n = narrow_node::create_const(offset);
-            auto width_m_offset = op->d()->nnode(0)->width() - offset;
-            auto width_m_offset_n = narrow_node::create_const(width_m_offset);
-
-            ssize_t hi_width = op->d()->nnode(1)->width() - offset;
-
-            /* First handle the low word, it's easy because all we
-             * have to do is zero fill it. */
-            {
-                auto d = op->d()->nnode(0);
-
-                auto lo_op = libflo::operation<narrow_node>::create(
-                    d,
-                    d->width(),
-                    libflo::opcode::LSH,
-                    {op->s()->nnode(0), offset_n}
-                    );
-                out.push_back(lo_op);
-            }
-
-            /* Now handle the high word, which is a touch harder
-             * because it requires information from two sources to be
-             * concatonated together. */
-            if ((hi_width > 0) && (op->s()->nnode_count() == 2)) {
-                auto lo = narrow_node::create_temp(offset);
-                auto lo_op = libflo::operation<narrow_node>::create(
-                    lo,
-                    lo->width(),
-                    libflo::opcode::RSH,
-                    {op->s()->nnode(0), width_m_offset_n}
-                    );
-                out.push_back(lo_op);
-
-                auto hi = narrow_node::create_temp(hi_width);
-                auto hi_op = libflo::operation<narrow_node>::create(
-                    hi,
-                    hi_width,
-                    libflo::opcode::RSH,
-                    {op->s()->nnode(1), narrow_node::create_const(0)}
-                    );
-                out.push_back(hi_op);
-
-                auto d = op->d()->nnode(1);
-                auto cat_op = libflo::operation<narrow_node>::create(
-                    d,
-                    d->width(),
-                    libflo::opcode::CAT,
-                    {hi, lo}
-                    );
-                out.push_back(cat_op);
-            } else if ((hi_width > 0) && (op->s()->nnode_count() == 1)) {
-                auto d = op->d()->nnode(1);
-                auto lo_op = libflo::operation<narrow_node>::create(
-                    d,
-                    d->width(),
-                    libflo::opcode::RSH,
-                    {op->s()->nnode(0), width_m_offset_n}
-                    );
-                out.push_back(lo_op);
-            } else {
-                auto d = op->d()->nnode(1);
-                auto rsh_w = 0 - hi_width;
-                auto mov_op = libflo::operation<narrow_node>::create(
-                    d,
-                    d->width(),
-                    libflo::opcode::RSH,
-                    {op->s()->nnode(0), narrow_node::create_const(d, rsh_w)}
-                    );
-                out.push_back(mov_op);
-            }
-        }
-        break;
 
         /* Multiplication has more custom splitting rules. */
     case libflo::opcode::MUL:
@@ -1033,7 +948,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
 std::shared_ptr<narrow_node> bfext(out_t& out,
                                    size_t width,
                                    const std::shared_ptr<wide_node>& w,
-                                   size_t offset,
+                                   ssize_t offset,
                                    size_t count)
 {
     auto n = narrow_node::create_temp(count);
@@ -1045,19 +960,21 @@ void bfext(std::shared_ptr<narrow_node>& n,
            out_t& out,
            size_t width,
            const std::shared_ptr<wide_node>& w,
-           size_t offset,
+           ssize_t offset,
            size_t count)
 {
-    size_t lo_word = offset / width;
-    size_t hi_word = (offset + count - 1) / width;
+    ssize_t lo_word = offset / (ssize_t)width;
+    ssize_t hi_word = (offset + (ssize_t)count - 1) / (ssize_t)width;
+    auto direction = (offset >= 0) ? libflo::opcode::RSH : libflo::opcode::LSH;
 
     if (lo_word == hi_word) {
-        auto moffset = offset % width;
-        if (lo_word < w->nnode_count()) {
+        if (lo_word < (ssize_t)w->nnode_count() && lo_word >= 0) {
+            auto moffset = (offset >= 0)
+                ? offset % width : width - (offset % width);
             auto rsh_op = libflo::operation<narrow_node>::create(
                 n,
                 n->width_u(),
-                libflo::opcode::RSH,
+                direction,
                 {w->nnode(lo_word), narrow_node::create_const(moffset)}
                 );
             out.push_back(rsh_op);
@@ -1074,14 +991,14 @@ void bfext(std::shared_ptr<narrow_node>& n,
     } else if (hi_word == (lo_word + 1)) {
         auto lo_offset = offset % width;
 
-        auto lo_width = (lo_word < w->nnode_count())
-            ? w->nnode(lo_word)->width() - lo_offset : n->width() - 1;
+        auto lo_width = (lo_word < (ssize_t)w->nnode_count() && lo_word >= 0)
+            ? w->nnode(lo_word)->width() - lo_offset : n->width();
         auto lo_dat = narrow_node::create_temp(lo_width);
-        if (lo_word < w->nnode_count()) {
+        if (lo_word < (ssize_t)w->nnode_count() && lo_word >= 0) {
             auto lo_op = libflo::operation<narrow_node>::create(
                 lo_dat,
                 lo_dat->width_u(),
-                libflo::opcode::RSH,
+                direction,
                 {w->nnode(lo_word), narrow_node::create_const(lo_offset)}
                 );
             out.push_back(lo_op);
@@ -1096,34 +1013,44 @@ void bfext(std::shared_ptr<narrow_node>& n,
             out.push_back(lo_op);
         }
 
-        auto hi_width = n->width() - lo_width;
-        auto hi_dat = narrow_node::create_temp(hi_width);
-        if (hi_word < w->nnode_count()) {
-            auto hi_op = libflo::operation<narrow_node>::create(
-                hi_dat,
-                hi_dat->width_u(),
-                libflo::opcode::RSH,
-                {w->nnode(hi_word), narrow_node::create_const(0)}
-                );
-            out.push_back(hi_op);
-        } else {
-            auto zero = narrow_node::create_const(hi_dat, 0);
-            auto hi_op = libflo::operation<narrow_node>::create(
-                hi_dat,
-                hi_dat->width_u(),
-                libflo::opcode::MOV,
-                {zero}
-                );
-            out.push_back(hi_op);
-        }
+        if (hi_word > 0) {
+            auto hi_width = n->width() - lo_width;
+            auto hi_dat = narrow_node::create_temp(hi_width);
+            if (hi_word < (ssize_t)w->nnode_count() && hi_word >= 0) {
+                auto hi_op = libflo::operation<narrow_node>::create(
+                    hi_dat,
+                    hi_dat->width_u(),
+                    direction,
+                    {w->nnode(hi_word), narrow_node::create_const(0)}
+                    );
+                out.push_back(hi_op);
+            } else {
+                auto zero = narrow_node::create_const(hi_dat, 0);
+                auto hi_op = libflo::operation<narrow_node>::create(
+                    hi_dat,
+                    hi_dat->width_u(),
+                    libflo::opcode::MOV,
+                    {zero}
+                    );
+                out.push_back(hi_op);
+            }
 
-        auto cat_op = libflo::operation<narrow_node>::create(
-            n,
-            n->width_u(),
-            libflo::opcode::CAT,
-            {hi_dat, lo_dat}
-            );
-        out.push_back(cat_op);
+            auto cat_op = libflo::operation<narrow_node>::create(
+                n,
+                n->width_u(),
+                libflo::opcode::CAT,
+                {hi_dat, lo_dat}
+                );
+            out.push_back(cat_op);
+        } else {
+            auto mov_op = libflo::operation<narrow_node>::create(
+                n,
+                n->width_u(),
+                libflo::opcode::MOV,
+                {lo_dat}
+                );
+            out.push_back(mov_op);
+        }
     } else {
         fprintf(stderr, "Non-contiguous words extracted\n");
         fprintf(stderr, "  offset: " SIZET_FORMAT "\n", offset);
