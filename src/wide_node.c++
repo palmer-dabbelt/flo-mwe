@@ -258,6 +258,12 @@ map_narrow(const std::string name,
            const libflo::unknown<std::string>& posn)
 {
     std::vector<std::shared_ptr<narrow_node>> out;
+    if (width.known() == false) {
+        fprintf(stderr, "Can't build narrow nodes without a width!\n");
+        fprintf(stderr, "  Node '%s' has unknown width!\n",
+                name.c_str());
+        abort();
+    }
 
     /* Here's the number of nodes we need to build from this node. */
     const size_t node_count =
