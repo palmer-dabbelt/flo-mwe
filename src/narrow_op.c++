@@ -85,7 +85,9 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::NOT:
     case libflo::opcode::OR:
     case libflo::opcode::OUT:
+    case libflo::opcode::RD:
     case libflo::opcode::REG:
+    case libflo::opcode::WR:
     case libflo::opcode::XOR:
 #ifndef MAPPING
     /* If there's no IO mapping needed then we just need to split
@@ -842,11 +844,9 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::MEM:
     case libflo::opcode::MSK:
     case libflo::opcode::NOP:
-    case libflo::opcode::RD:
     case libflo::opcode::RND:
     case libflo::opcode::RST:
     case libflo::opcode::ST:
-    case libflo::opcode::WR:
         fprintf(stderr, "Can't narrow operation '%s' in ",
                 opcode_to_string(op->op()).c_str());
         op->writeln_debug(stderr);
