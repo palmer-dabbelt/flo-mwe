@@ -401,7 +401,75 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                 bfext(d, out, width, wide_s, noffset, d->width());
             }
         } else {
-            fprintf(stderr, "op: '%s'\n", op->to_string().c_str());
+            std::vector<std::shared_ptr<libflo::operation<wide_node>>> wout;
+
+            /* A variable shift is decomposed to a bunch of constant
+             * shifts along with MUXes to determine exactly what
+             * should be used for the shifting.  This ends up being
+             * really super similar to the LT/GTE code. */
+            auto outwidth = op->d()->width() > op->s()->width()
+                ? op->d()->width() : op->s()->width();
+            auto r = wide_node::create_temp(outwidth);
+            auto zero = wide_node::create_const(r, 0);
+            auto r_op = libflo::operation<wide_node>::create(
+                r,
+                r->width_u(),
+                libflo::opcode::RSH,
+                {op->s(), zero}
+                );
+            wout.push_back(r_op);
+
+            for (size_t offset = 0; offset < op->t()->width(); ++offset) {
+                auto offsetn = wide_node::create_const(r, offset);
+
+                auto bit = wide_node::create_temp(1);
+                auto bit_op = libflo::operation<wide_node>::create(
+                    bit,
+                    bit->width_u(),
+                    libflo::opcode::RSH,
+                    {op->t(), offsetn}
+                    );
+                wout.push_back(bit_op);
+
+                auto offsetp = (size_t)1 << (size_t)(offset);
+                auto offsetpn = wide_node::create_const(r, offsetp);
+
+                auto shift = wide_node::create_temp(r);
+                auto shift_op = libflo::operation<wide_node>::create(
+                    shift,
+                    shift->width_u(),
+                    op->op(),
+                    {r, offsetpn}
+                    );
+                wout.push_back(shift_op);
+
+                auto mux = wide_node::create_temp(r);
+                auto mux_op = libflo::operation<wide_node>::create(
+                    mux,
+                    mux->width_u(),
+                    libflo::opcode::MUX,
+                    {bit, shift, r}
+                    );
+                wout.push_back(mux_op);
+
+                r = mux;
+            }
+
+            auto d = op->d();
+            auto mov_op = libflo::operation<wide_node>::create(
+                d,
+                d->width_u(),
+                libflo::opcode::RSH,
+                {r, zero}
+                );
+            wout.push_back(mov_op);
+
+            for (const auto& wop: wout) {
+                wop->writeln_debug(stderr);
+
+                for (const auto& op: narrow_op(wop, width, false))
+                    out.push_back(op);
+            }
         }
 
         break;
