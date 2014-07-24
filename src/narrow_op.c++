@@ -79,6 +79,9 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     switch (op->op()) {
         /* These are bit-wise operations, which are basically just
          * replicated N times as there's no dependencies at all! */
+    case libflo::opcode::WR:
+        emit_catd = false;
+
     case libflo::opcode::AND:
     case libflo::opcode::MOV:
     case libflo::opcode::MUX:
@@ -87,7 +90,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::OUT:
     case libflo::opcode::RD:
     case libflo::opcode::REG:
-    case libflo::opcode::WR:
     case libflo::opcode::XOR:
 #ifndef MAPPING
     /* If there's no IO mapping needed then we just need to split
