@@ -89,7 +89,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     case libflo::opcode::OR:
     case libflo::opcode::OUT:
     case libflo::opcode::RD:
-    case libflo::opcode::REG:
     case libflo::opcode::XOR:
 #ifndef MAPPING
     /* If there's no IO mapping needed then we just need to split
@@ -112,6 +111,25 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                 else
                     svec.push_back(s->nnode(i));
             }
+
+            auto ptr = libflo::operation<narrow_node>::create(d,
+                                                              d->width_u(),
+                                                              op->op(),
+                                                              svec);
+            out.push_back(ptr);
+        }
+
+        break;
+    }
+
+    case libflo::opcode::REG:
+    {
+        for (size_t i = 0; i < op->d()->nnode_count(); ++i) {
+            auto d = op->d()->nnode(i);
+
+            std::vector<std::shared_ptr<narrow_node>> svec;
+            svec.push_back(narrow_node::create_const(d, 1));
+            svec.push_back(op->t()->nnode(i));
 
             auto ptr = libflo::operation<narrow_node>::create(d,
                                                               d->width_u(),
