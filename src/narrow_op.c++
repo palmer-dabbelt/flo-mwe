@@ -945,10 +945,6 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
     /* This contains the previous node in the chain. */
     std::shared_ptr<narrow_node> prev = NULL;
 
-    /* This contains the operation to load from, which is usually the
-     * destination, but can be the source for registers. */
-    auto cd = op->op() == libflo::opcode::REG ? op->t() : op->d();
-
     for (size_t i = 0; i < op->d()->nnode_count(); ++i) {
         if (prev == NULL) {
             prev = op->d()->catdnode(i);
@@ -957,7 +953,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
                 ::create(prev,
                          prev->width_u(),
                          libflo::opcode::MOV,
-                         {cd->nnode(0)}
+                         {op->d()->nnode(0)}
                     );
             out.push_back(ptr);
             continue;
@@ -967,7 +963,7 @@ out_t narrow_op(const std::shared_ptr<libflo::operation<wide_node>> op,
         auto ptr = libflo::operation<narrow_node>::create(next,
                                                           next->width_u(),
                                                           libflo::opcode::CATD,
-                                                          {cd->nnode(i),
+                                                          {op->d()->nnode(i),
                                                                   prev}
             );
         out.push_back(ptr);
