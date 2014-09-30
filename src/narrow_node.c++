@@ -208,7 +208,7 @@ narrow_node::create_const(const std::shared_ptr<narrow_node> t, size_t value)
                                                         t->width_u(),
                                                         t->depth_u(),
                                                         t->is_mem(),
-                                                        t->is_const(),
+                                                        true,
                                                         t->dfdepth_u(),
                                                         t->posn_u()
                                             ));
