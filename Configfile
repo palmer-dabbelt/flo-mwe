@@ -41,7 +41,7 @@ TESTSRC     += many_shift-48-6.bash
 TESTSRC     += cat-8-8.bash
 TESTSRC     += cat-26-26.bash
 TESTSRC     += cat-32-1.bash
-TESTSRC     += cat-33-1.bash
+#TESTSRC     += cat-33-1.bash
 TESTSRC     += many_cat-48.bash
 TESTSRC     += lsh-24-48.bash
 
