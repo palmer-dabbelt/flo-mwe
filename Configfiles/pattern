@@ -1,0 +1,26 @@
+#!/bin/bash
+
+chisel-patterns --list | while read pattern
+do
+    if [[ "$pattern" == "reg" ]]
+    then
+        continue
+    fi
+
+    if [[ "$pattern" == "asm_div" ]]
+    then
+        continue
+    fi
+
+    chisel-patterns --list $pattern | while read example
+    do
+        echo "TESTS += pattern-$pattern-$example"
+        echo "SOURCES += pattern.bash"
+    done
+done
+
+echo "TESTS += pattern-variable_right_shift-128-128-7"
+echo "SOURCES += pattern.bash"
+
+echo "TESTS += pattern-variable_right_shift-64-64-1"
+echo "SOURCES += pattern.bash"

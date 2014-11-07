@@ -60,6 +60,8 @@ TESTSRC     += des-noshuffle.bash
 TESTSRC     += des-noshuffle-narrow.bash
 TESTSRC     += mimo.bash
 
+CONFIG      += pattern
+
 # This binary expands multi-word Flo operations without generating the
 # mapping info.
 BINARIES    += flo-mwe
